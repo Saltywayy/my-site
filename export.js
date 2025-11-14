@@ -1,78 +1,8 @@
-// ========================================
-// ЧАСТЬ 3: ЭКСПОРТ РЕЗУЛЬТАТОВ
-// ========================================
-// PDF экспорт, соцсети, копирование
+// export.js - Экспорт результатов (PDF, соцсети, копирование)
 
-// ===== 1. Добавьте библиотеку jsPDF в <head> =====
-// <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-// ===== 2. Добавьте кнопки экспорта в результаты =====
-// Вставьте этот HTML в блок результатов (#result):
-/*
-<div class="export-buttons" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
-  <button id="exportPDF" class="btn primary">📄 Скачать PDF</button>
-  <button id="shareVK" class="btn">📱 VK</button>
-  <button id="shareTelegram" class="btn">✈️ Telegram</button>
-  <button id="shareWhatsApp" class="btn">💬 WhatsApp</button>
-  <button id="copyResult" class="btn">📋 Копировать</button>
-</div>
-*/
-
-// ===== 3. CSS для кнопок экспорта =====
-const exportStyles = `
-.export-buttons {
-  margin-top: 16px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.export-buttons .btn {
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: var(--card);
-  color: var(--text);
-  border: 1px solid rgba(0,0,0,0.1);
-}
-.export-buttons .btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.export-buttons .btn.primary {
-  background: var(--accent-2);
-  color: white;
-  border: none;
-}
-.copy-notification {
-  position: fixed;
-  top: 100px;
-  right: 20px;
-  background: var(--success);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 150;
-  animation: slideIn 0.3s ease-out;
-}
-@keyframes slideIn {
-  from { transform: translateX(400px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-`;
-
-// Добавляем стили
-const styleSheet = document.createElement('style');
-styleSheet.textContent = exportStyles;
-document.head.appendChild(styleSheet);
-
-// ===== 4. Глобальные переменные для хранения результата =====
 let currentResult = null;
 
-// ===== 5. Функция генерации текста результата =====
+// Генерация текста результата
 function generateResultText(result) {
   return `🧠 МОЙ РЕЗУЛЬТАТ ФИЛОСОФСКОГО ТЕСТА
 
@@ -85,19 +15,16 @@ ${result.description}
 Пройти тест: ${window.location.href}`;
 }
 
-// ===== 6. Экспорт в PDF =====
+// Экспорт в PDF
 async function exportToPDF(result) {
   try {
-    // Проверяем наличие jsPDF
     if (typeof window.jspdf === 'undefined') {
-      alert('Библиотека PDF не загружена. Добавьте jsPDF в <head>.');
+      alert('Библиотека PDF не загружена. Убедитесь, что jsPDF подключен в <head>.');
       return;
     }
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
-    // Настройка шрифтов и цветов
     const primaryColor = [43, 123, 228];
     const textColor = [34, 34, 34];
     
@@ -163,14 +90,13 @@ async function exportToPDF(result) {
     doc.setFontSize(11);
     doc.setTextColor(...textColor);
     
-    // Разбиваем текст на строки
     const splitDescription = doc.splitTextToSize(result.description, 170);
     doc.text(splitDescription, 20, y);
     
     y += splitDescription.length * 6 + 15;
     
-    // Демографические данные (если есть)
-    if (result.demographics) {
+    // Демографические данные
+    if (result.demographics && Object.keys(result.demographics).length > 0) {
       if (y > 250) {
         doc.addPage();
         y = 20;
@@ -212,25 +138,30 @@ async function exportToPDF(result) {
       window.philosophyTestAnalytics.trackExport('pdf');
     }
     
-    showNotification('PDF успешно сохранен!');
+    showNotification('✅ PDF успешно сохранен!', 'success');
   } catch (error) {
     console.error('Ошибка при создании PDF:', error);
     alert('Произошла ошибка при создании PDF. Попробуйте снова.');
   }
 }
 
-// ===== 7. Поделиться в соцсетях =====
+// Поделиться в VK
 function shareToVK(result) {
-  const text = generateResultText(result);
   const url = encodeURIComponent(window.location.href);
   const title = encodeURIComponent('Мой результат философского теста');
-  window.open(`https://vk.com/share.php?url=${url}&title=${title}`, '_blank', 'width=600,height=400');
+  const description = encodeURIComponent(`Моя философия: ${result.philosophy}`);
+  window.open(
+    `https://vk.com/share.php?url=${url}&title=${title}&description=${description}`, 
+    '_blank', 
+    'width=600,height=400'
+  );
   
   if (window.philosophyTestAnalytics) {
     window.philosophyTestAnalytics.trackExport('vk');
   }
 }
 
+// Поделиться в Telegram
 function shareToTelegram(result) {
   const text = encodeURIComponent(generateResultText(result));
   window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${text}`, '_blank');
@@ -240,6 +171,7 @@ function shareToTelegram(result) {
   }
 }
 
+// Поделиться в WhatsApp
 function shareToWhatsApp(result) {
   const text = encodeURIComponent(generateResultText(result));
   window.open(`https://wa.me/?text=${text}`, '_blank');
@@ -249,14 +181,14 @@ function shareToWhatsApp(result) {
   }
 }
 
-// ===== 8. Копировать результат =====
+// Копировать результат в буфер обмена
 async function copyResultToClipboard(result) {
   const text = generateResultText(result);
   
   try {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(text);
-      showNotification('✅ Результат скопирован в буфер обмена!');
+      showNotification('✅ Результат скопирован в буфер обмена!', 'success');
     } else {
       // Fallback для старых браузеров
       const textArea = document.createElement('textarea');
@@ -269,7 +201,7 @@ async function copyResultToClipboard(result) {
       
       try {
         document.execCommand('copy');
-        showNotification('✅ Результат скопирован в буфер обмена!');
+        showNotification('✅ Результат скопирован в буфер обмена!', 'success');
       } catch (err) {
         alert('Не удалось скопировать текст');
       }
@@ -286,20 +218,7 @@ async function copyResultToClipboard(result) {
   }
 }
 
-// ===== 9. Показать уведомление =====
-function showNotification(message) {
-  const notification = document.createElement('div');
-  notification.className = 'copy-notification';
-  notification.textContent = message;
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.style.animation = 'slideIn 0.3s ease-out reverse';
-    setTimeout(() => notification.remove(), 300);
-  }, 2000);
-}
-
-// ===== 10. Функция добавления кнопок экспорта =====
+// Добавить кнопки экспорта к результатам
 function addExportButtons(resultElement, result) {
   currentResult = result;
   
@@ -324,39 +243,6 @@ function addExportButtons(resultElement, result) {
   document.getElementById('shareWhatsApp').addEventListener('click', () => shareToWhatsApp(result));
   document.getElementById('copyResult').addEventListener('click', () => copyResultToClipboard(result));
 }
-
-// ===== 11. Интеграция с функцией calculate() =====
-/*
-ПРИМЕР ИНТЕГРАЦИИ:
-
-function calculate() {
-  // ... ваш существующий код расчета ...
-  
-  const result = {
-    philosophy: main,
-    subtype: sub,
-    meaningIndex: mi,
-    description: longDesc[top[0]] || '',
-    demographics: {
-      'Возраст': fd.get('age') || 'Не указан',
-      'Образование': fd.get('education') || 'Не указано',
-      'Пол': fd.get('gender') || 'Не указан',
-      'Население': fd.get('population') || 'Не указано'
-    }
-  };
-  
-  // ... показ результата в HTML ...
-  
-  // Добавляем кнопки экспорта
-  const resultEl = document.getElementById('result');
-  addExportButtons(resultEl, result);
-  
-  // Отслеживаем завершение
-  if (window.philosophyTestAnalytics) {
-    window.philosophyTestAnalytics.trackTestComplete(result);
-  }
-}
-*/
 
 // Экспортируем функции
 window.philosophyTestExport = {
