@@ -1,142 +1,13 @@
-// ========================================
-// ЧАСТЬ 4: СОХРАНЕНИЕ ПРОГРЕССА И УЛУЧШЕНИЯ UX
-// ========================================
-// localStorage, автосохранение, валидация, уведомления
+// storage.js - Сохранение прогресса и UX улучшения
 
-// ===== 1. Константы для localStorage =====
+// Константы для localStorage
 const STORAGE_KEY = 'philosophyTest_answers';
 const STORAGE_PROGRESS_KEY = 'philosophyTest_progress';
 const STORAGE_TIMESTAMP_KEY = 'philosophyTest_timestamp';
-const AUTO_SAVE_INTERVAL = 5000; // Автосохранение каждые 5 секунд
-const EXPIRY_DAYS = 7; // Данные хранятся 7 дней
+const AUTO_SAVE_INTERVAL = 5000; // 5 секунд
+const EXPIRY_DAYS = 7;
 
-// ===== 2. Стили для уведомлений и модалов =====
-const uxStyles = `
-.notification {
-  position: fixed;
-  top: 100px;
-  right: 20px;
-  background: var(--card);
-  color: var(--text);
-  padding: 14px 20px;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-  z-index: 150;
-  animation: slideInRight 0.3s ease-out;
-  border-left: 4px solid var(--accent);
-  max-width: 350px;
-}
-.notification.success { border-left-color: var(--success); }
-.notification.warning { border-left-color: #ff9800; }
-.notification.error { border-left-color: #f44336; }
-
-@keyframes slideInRight {
-  from { transform: translateX(400px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-.confirm-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(2,6,23,0.7);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 160;
-  animation: fadeIn 0.2s;
-}
-.confirm-modal.show { display: flex; }
-
-.confirm-content {
-  background: var(--card);
-  padding: 24px;
-  border-radius: 12px;
-  max-width: 450px;
-  width: 90%;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-}
-.confirm-content h3 {
-  margin: 0 0 12px 0;
-  color: var(--text);
-}
-.confirm-content p {
-  margin: 0 0 20px 0;
-  color: var(--muted);
-  line-height: 1.5;
-}
-.confirm-buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.validation-error {
-  color: #f44336;
-  font-size: 13px;
-  margin-top: 8px;
-  display: none;
-}
-.validation-error.show { display: block; }
-
-.resume-banner {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: white;
-  padding: 16px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.resume-banner .message {
-  flex: 1;
-  font-weight: 600;
-}
-.resume-banner .actions {
-  display: flex;
-  gap: 8px;
-}
-.resume-banner .btn {
-  background: white;
-  color: var(--accent);
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-.resume-banner .btn:hover {
-  transform: translateY(-2px);
-}
-.resume-banner .btn.secondary {
-  background: rgba(255,255,255,0.2);
-  color: white;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.unfilled-question {
-  border: 2px solid #ff9800 !important;
-  animation: shake 0.5s;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-10px); }
-  75% { transform: translateX(10px); }
-}
-`;
-
-const styleSheet = document.createElement('style');
-styleSheet.textContent = uxStyles;
-document.head.appendChild(styleSheet);
-
-// ===== 3. Функции работы с localStorage =====
+let autoSaveTimer;
 
 // Проверка истечения срока хранения
 function isDataExpired(timestamp) {
@@ -150,6 +21,8 @@ function isDataExpired(timestamp) {
 function saveAnswers() {
   try {
     const form = document.getElementById('quizForm');
+    if (!form) return;
+    
     const formData = new FormData(form);
     const answers = {};
     
@@ -159,7 +32,11 @@ function saveAnswers() {
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
     localStorage.setItem(STORAGE_TIMESTAMP_KEY, Date.now().toString());
-    localStorage.setItem(STORAGE_PROGRESS_KEY, currentIndex.toString());
+    
+    // Сохраняем текущий индекс вопроса (если доступен)
+    if (typeof currentIndex !== 'undefined') {
+      localStorage.setItem(STORAGE_PROGRESS_KEY, currentIndex.toString());
+    }
     
     console.log('💾 Прогресс сохранен');
   } catch (error) {
@@ -202,6 +79,7 @@ function clearSavedData() {
 // Восстановить ответы из сохраненных данных
 function restoreAnswers(data) {
   const form = document.getElementById('quizForm');
+  if (!form) return;
   
   for (let [key, value] of Object.entries(data.answers)) {
     const input = form.elements[key];
@@ -210,7 +88,6 @@ function restoreAnswers(data) {
         const radio = form.querySelector(`input[name="${key}"][value="${value}"]`);
         if (radio) {
           radio.checked = true;
-          // Визуально выделяем выбранный вариант
           const label = radio.closest('.opt-card');
           if (label) label.classList.add('selected');
         }
@@ -233,7 +110,7 @@ function restoreAnswers(data) {
   showNotification('✅ Прогресс восстановлен!', 'success');
 }
 
-// ===== 4. Показать баннер восстановления =====
+// Показать баннер восстановления
 function showResumeBanner() {
   const savedData = loadAnswers();
   if (!savedData) return;
@@ -251,28 +128,29 @@ function showResumeBanner() {
   `;
   
   const mainCard = document.querySelector('main.card');
-  mainCard.insertBefore(banner, mainCard.firstChild);
-  
-  document.getElementById('resumeTest').addEventListener('click', () => {
-    restoreAnswers(savedData);
-    banner.remove();
-  });
-  
-  document.getElementById('startFresh').addEventListener('click', () => {
-    clearSavedData();
-    banner.remove();
-    showNotification('Начинаем с чистого листа!', 'success');
-  });
+  if (mainCard) {
+    mainCard.insertBefore(banner, mainCard.firstChild);
+    
+    document.getElementById('resumeTest').addEventListener('click', () => {
+      restoreAnswers(savedData);
+      banner.remove();
+    });
+    
+    document.getElementById('startFresh').addEventListener('click', () => {
+      clearSavedData();
+      banner.remove();
+      showNotification('Начинаем с чистого листа!', 'success');
+    });
+  }
 }
 
-// ===== 5. Автосохранение =====
-let autoSaveTimer;
-
+// Автосохранение
 function startAutoSave() {
-  stopAutoSave(); // Очищаем предыдущий таймер
+  stopAutoSave();
   autoSaveTimer = setInterval(() => {
     saveAnswers();
   }, AUTO_SAVE_INTERVAL);
+  console.log('🔄 Автосохранение запущено');
 }
 
 function stopAutoSave() {
@@ -282,34 +160,38 @@ function stopAutoSave() {
 }
 
 // Сохранение при выходе со страницы
-window.addEventListener('beforeunload', (e) => {
+window.addEventListener('beforeunload', () => {
   saveAnswers();
 });
 
-// ===== 6. Валидация формы =====
+// Валидация формы
 function validateForm() {
   const form = document.getElementById('quizForm');
+  if (!form) return { isValid: false, errors: [], unfilledQuestions: [] };
+  
   const formData = new FormData(form);
   const errors = [];
   const unfilledQuestions = [];
   
   // Проверяем демографические поля
-  const demographics = ['population', 'education', 'field', 'religion_ident', 'gender', 'age'];
-  demographics.forEach(field => {
+  const demoFields = ['population', 'education', 'field', 'religion_ident', 'gender', 'age'];
+  demoFields.forEach(field => {
     if (!formData.get(field)) {
       errors.push(`Не заполнено поле: ${getDemographicLabel(field)}`);
     }
   });
   
   // Проверяем вопросы
-  for (let i = 1; i <= questionsData.length; i++) {
-    if (!formData.get(`q${i}`)) {
-      unfilledQuestions.push(i);
+  if (typeof questionsData !== 'undefined') {
+    for (let i = 1; i <= questionsData.length; i++) {
+      if (!formData.get(`q${i}`)) {
+        unfilledQuestions.push(i);
+      }
     }
-  }
-  
-  if (unfilledQuestions.length > 0) {
-    errors.push(`Не отвечено на ${unfilledQuestions.length} вопрос(ов): ${unfilledQuestions.slice(0, 5).join(', ')}${unfilledQuestions.length > 5 ? '...' : ''}`);
+    
+    if (unfilledQuestions.length > 0) {
+      errors.push(`Не отвечено на ${unfilledQuestions.length} вопрос(ов): ${unfilledQuestions.slice(0, 5).join(', ')}${unfilledQuestions.length > 5 ? '...' : ''}`);
+    }
   }
   
   return {
@@ -348,7 +230,7 @@ function highlightUnfilledQuestions(questionNumbers) {
   });
 }
 
-// ===== 7. Модальное окно подтверждения =====
+// Модальное окно подтверждения
 function showConfirmModal(title, message, onConfirm, onCancel) {
   const modal = document.createElement('div');
   modal.className = 'confirm-modal show';
@@ -383,7 +265,7 @@ function showConfirmModal(title, message, onConfirm, onCancel) {
   });
 }
 
-// ===== 8. Улучшенные уведомления =====
+// Уведомления
 function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
@@ -396,55 +278,45 @@ function showNotification(message, type = 'info') {
   }, 3000);
 }
 
-// ===== 9. Интеграция с кнопкой "Посчитать результат" =====
-function enhancedCalculate() {
-  // Валидация
+// Улучшенная функция расчета с валидацией
+function enhancedCalculate(originalCalculateFunc) {
   const validation = validateForm();
   
   if (!validation.isValid) {
     showNotification('⚠️ Пожалуйста, ответьте на все вопросы', 'warning');
     
-    // Показываем детальные ошибки
     setTimeout(() => {
       const errorList = validation.errors.slice(0, 3).join('\n');
       showConfirmModal(
         'Есть незаполненные поля',
         `${errorList}\n\nВы можете продолжить без заполнения всех полей, но результаты будут менее точными.`,
         () => {
-          // Продолжить без заполнения
-          calculate(); // вызов оригинальной функции
-          clearSavedData(); // Очищаем сохраненные данные после завершения
+          originalCalculateFunc();
+          clearSavedData();
         }
       );
     }, 500);
     
-    // Подсвечиваем незаполненные вопросы
     if (validation.unfilledQuestions.length > 0) {
       highlightUnfilledQuestions(validation.unfilledQuestions.slice(0, 5));
     }
     
-    return;
+    return false;
   }
   
-  // Если все заполнено - считаем результат
-  calculate(); // вызов оригинальной функции
-  clearSavedData(); // Очищаем после успешного завершения
-  
-  if (window.philosophyTestAnalytics) {
-    window.philosophyTestAnalytics.trackTestComplete({
-      philosophy: 'calculated',
-      meaningIndex: 0
-    });
-  }
+  originalCalculateFunc();
+  clearSavedData();
+  return true;
 }
 
-// ===== 10. Интеграция с кнопкой "Сбросить" =====
-function enhancedReset() {
+// Улучшенная функция сброса с подтверждением
+function enhancedReset(originalResetFunc) {
   showConfirmModal(
     'Сбросить все ответы?',
     'Все ваши ответы будут удалены. Это действие нельзя отменить.',
     () => {
-      document.getElementById('quizForm').reset();
+      if (originalResetFunc) originalResetFunc();
+      
       clearSavedData();
       
       // Очищаем визуальные выделения
@@ -473,29 +345,15 @@ function enhancedReset() {
   );
 }
 
-// ===== 11. Инициализация при загрузке страницы =====
+// Инициализация системы хранения
 function initProgressSystem() {
-  // Показываем баннер восстановления, если есть сохраненные данные
+  console.log('💾 Инициализация системы сохранения прогресса...');
+  
+  // Показываем баннер восстановления
   showResumeBanner();
   
   // Запускаем автосохранение
   startAutoSave();
-  
-  // Заменяем обработчики кнопок
-  const calcBtn = document.getElementById('calcBtn');
-  if (calcBtn) {
-    calcBtn.removeEventListener('click', calculate);
-    calcBtn.addEventListener('click', enhancedCalculate);
-  }
-  
-  const resetBtn = document.getElementById('resetBtn');
-  if (resetBtn) {
-    resetBtn.removeEventListener('click', () => {});
-    resetBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      enhancedReset();
-    });
-  }
   
   // Сохраняем при каждом изменении
   const form = document.getElementById('quizForm');
@@ -505,25 +363,25 @@ function initProgressSystem() {
     });
   }
   
-  console.log('💾 Система сохранения прогресса инициализирована');
-  console.log('✅ UX улучшения активированы');
+  console.log('✅ Система сохранения прогресса инициализирована');
 }
 
-// ===== 12. Экспорт функций =====
-window.philosophyTestProgress = {
+// Экспорт функций
+window.philosophyTestStorage = {
   saveAnswers,
   loadAnswers,
   clearSavedData,
   restoreAnswers,
+  showResumeBanner,
+  startAutoSave,
+  stopAutoSave,
   validateForm,
-  showNotification,
+  highlightUnfilledQuestions,
   showConfirmModal,
+  showNotification,
+  enhancedCalculate,
+  enhancedReset,
   initProgressSystem
 };
 
-// Автоинициализация при загрузке DOM
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initProgressSystem);
-} else {
-  initProgressSystem();
-}
+console.log('💾 Модуль сохранения прогресса инициализирован');
