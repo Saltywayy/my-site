@@ -132,8 +132,8 @@ async function sendResultsViaEmail(result) {
 async function sendResultsViaTeleg(result) {
   try {
     // Создайте бота через @BotFather и получите токен
-    const BOT_TOKEN = 'YOUR_BOT_TOKEN';        // Замените
-    const CHAT_ID = 'YOUR_CHAT_ID';            // Замените (ваш Telegram ID)
+    const BOT_TOKEN = '8144304163:AAFUmGtCKg95KOliytaaS8f6TOijQFvYXsU';        // Замените
+    const CHAT_ID = '657863328';            // Замените (ваш Telegram ID)
     
     const message = `
 🧠 НОВЫЙ РЕЗУЛЬТАТ ТЕСТА
