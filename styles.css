@@ -74,6 +74,32 @@ form{display:block;}
 
 .demo-card{border-radius:10px;padding:14px;border:1px solid rgba(0,0,0,0.04);margin-bottom:12px;background:linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.02));}
 
+/* Стили для кастомного ввода */
+#custom-religion_ident {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#custom-input-religion_ident {
+  transition: border-color 0.3s ease;
+}
+
+#custom-input-religion_ident:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(43, 123, 228, 0.1);
+}
+
 /* Стили для экспорта */
 .export-buttons {
   margin-top: 16px;
