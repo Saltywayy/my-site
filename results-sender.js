@@ -131,8 +131,8 @@ async function sendResultsViaEmail(result) {
 async function sendResultsViaTeleg(result) {
   try {
     // ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ
-    const BOT_TOKEN = 'YOUR_BOT_TOKEN';        // Токен от @BotFather
-    const CHAT_ID = 'YOUR_CHAT_ID';            // Ваш Chat ID от @userinfobot
+    const BOT_TOKEN = '8144304163:AAFUmGtCKg95KOliytaaS8f6TOijQFvYXsU';        // Токен от @BotFather
+    const CHAT_ID = '657863328';            // Ваш Chat ID от @userinfobot
     
     console.log('📤 Начинаю отправку в Telegram...');
     console.log('Bot Token:', BOT_TOKEN.substring(0, 10) + '...');
