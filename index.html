@@ -3,26 +3,76 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-
+  
+  <!-- SEO Meta Tags -->
   <title>Философский тест: Узнайте свое мировоззрение за 40 вопросов</title>
   <meta name="description" content="Пройдите бесплатный философский тест из 40 вопросов и узнайте свое мировоззрение: экзистенциализм, стоицизм, гедонизм и другие направления. Получите детальный анализ и индекс смыслоориентации." />
   <meta name="keywords" content="философский тест, тест на мировоззрение, экзистенциализм, стоицизм, философия онлайн, психологический тест, узнать свою философию" />
   <meta name="author" content="Философский тест" />
+  <link rel="canonical" href="https://your-domain.netlify.app/" />
   
-  <link rel="stylesheet" href="styles.css">
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://your-domain.netlify.app/" />
+  <meta property="og:title" content="Философский тест: Узнайте свое мировоззрение" />
+  <meta property="og:description" content="Пройдите тест из 40 вопросов и узнайте, какая философия соответствует вашему мышлению. Экзистенциализм, стоицизм, гедонизм и другие направления." />
+  <meta property="og:image" content="https://your-domain.netlify.app/og-image.jpg" />
+  <meta property="og:locale" content="ru_RU" />
   
-  <!-- jsPDF и pdfmake -->
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://your-domain.netlify.app/" />
+  <meta property="twitter:title" content="Философский тест: Узнайте свое мировоззрение" />
+  <meta property="twitter:description" content="40 вопросов для определения вашей философии жизни" />
+  <meta property="twitter:image" content="https://your-domain.netlify.app/og-image.jpg" />
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  
+  <!-- jsPDF для экспорта в PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <!-- Альтернатива: pdfmake с поддержкой кириллицы (РЕКОМЕНДУЕТСЯ) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Quiz",
+    "name": "Философский тест на мировоззрение",
+    "description": "Тест из 40 вопросов для определения вашего философского мировоззрения",
+    "author": {
+      "@type": "Organization",
+      "name": "Философский тест"
+    },
+    "educationalLevel": "Взрослые",
+    "inLanguage": "ru",
+    "hasPart": [
+      {
+        "@type": "Question",
+        "eduQuestionType": "Multiple choice",
+        "text": "Философские и мировоззренческие вопросы"
+      }
+    ],
+    "typicalAgeRange": "18-",
+    "timeRequired": "PT10M"
+  }
+  </script>
+
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body data-theme="light">
-
   <header class="fixed-header" role="banner">
     <div class="header-inner">
       <div class="title">Философский тест — 40 вопросов</div>
-      <div class="progress-wrap">
-        <div class="progress"><div class="bar" id="globalProgressBar"></div></div>
+      <div class="progress-wrap" aria-hidden="false">
+        <div class="progress" aria-hidden="true"><div class="bar" id="globalProgressBar"></div></div>
         <div class="small" id="progressText">0 / 40</div>
       </div>
       <div class="controls">
@@ -42,7 +92,7 @@
           <div class="nav-left">
             <button type="button" id="prevBtn" class="btn" disabled>Назад</button>
             <button type="button" id="nextBtn" class="btn primary">Далее</button>
-            <div class="small" id="qCounter">Вопрос 1 / 40</div>
+            <div class="small" style="margin-left:8px;" id="qCounter">Вопрос 1 / 40</div>
           </div>
           <div class="nav-right">
             <button type="button" id="showAllBtn" class="btn">Показать все</button>
@@ -56,7 +106,7 @@
     </main>
   </div>
 
-  <div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
     <div class="modal" id="modal">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <h3>Все ответы</h3>
@@ -68,7 +118,15 @@
     </div>
   </div>
 
-  <!-- Скрытая форма для Netlify -->
+  <!-- Подключаем все JS файлы -->
+  <script src="data.js"></script>
+  <script src="analytics.js"></script>
+  <script src="export.js"></script>
+  <script src="storage.js"></script>
+  <script src="results-sender.js"></script>
+  <script src="main.js"></script>
+  
+  <!-- Скрытая форма для Netlify Forms (для отправки результатов) -->
   <form name="test-results" netlify netlify-honeypot="bot-field" hidden>
     <input type="text" name="philosophy" />
     <input type="text" name="subtype" />
@@ -83,94 +141,5 @@
     <input type="text" name="timestamp" />
     <input type="text" name="url" />
   </form>
-
-  <!-- Согласие на обработку данных -->
-  <div id="consentBackdrop" style="position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px);">
-    <div style="background: var(--card-bg,#fff); padding: 20px; border-radius: 14px; max-width: 420px; box-shadow: 0 8px 22px rgba(0,0,0,0.25);">
-      <h2 style="margin-top:0">Согласие на обработку данных</h2>
-      <p>Перед началом теста необходимо подтвердить согласие на обработку данных. Вся информация используется <b>исключительно в анонимном виде</b>.</p>
-      <button id="consentAgree" style="margin-top:12px;width:100%;padding:10px;border-radius:8px;">Согласен</button>
-    </div>
-  </div>
-
-  <!-- Подключение JS -->
-  <script src="data.js"></script>
-
-  <!-- Скрипт рендеринга демографии -->
-  <script>
-  function renderDemographics(demographicsData) {
-    const container = document.getElementById('demographicsArea');
-    container.innerHTML = '';
-
-    demographicsData.forEach(field => {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'demographic-field';
-      wrapper.style.marginBottom = '12px';
-
-      const label = document.createElement('label');
-      label.textContent = field.label;
-      wrapper.appendChild(label);
-
-      if (field.opts === null) {
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.name = field.name;
-        input.placeholder = 'Введите число';
-        input.required = true;
-        wrapper.appendChild(input);
-      } else if (field.name === 'religion_ident') {
-        const select = document.createElement('select');
-        select.name = field.name;
-        select.required = true;
-
-        field.opts.forEach(opt => {
-          const option = document.createElement('option');
-          option.value = opt.value;
-          option.textContent = opt.label;
-          select.appendChild(option);
-        });
-
-        wrapper.appendChild(select);
-
-        const customInput = document.createElement('input');
-        customInput.type = 'text';
-        customInput.name = 'custom_religion';
-        customInput.placeholder = 'Укажите религию';
-        customInput.style.display = 'none';
-        customInput.style.marginTop = '4px';
-        wrapper.appendChild(customInput);
-
-        select.addEventListener('change', () => {
-          customInput.style.display = select.value === 'custom' ? 'block' : 'none';
-        });
-      } else {
-        const select = document.createElement('select');
-        select.name = field.name;
-        select.required = true;
-
-        field.opts.forEach(opt => {
-          const option = document.createElement('option');
-          option.value = opt.value;
-          option.textContent = opt.label;
-          select.appendChild(option);
-        });
-
-        wrapper.appendChild(select);
-      }
-
-      container.appendChild(wrapper);
-    });
-  }
-
-  renderDemographics(demographics);
-  </script>
-
-  <!-- Остальные JS файлы -->
-  <script src="analytics.js"></script>
-  <script src="export.js"></script>
-  <script src="storage.js"></script>
-  <script src="results-sender.js"></script>
-  <script src="main.js"></script>
-
 </body>
 </html>
