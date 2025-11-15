@@ -24,25 +24,29 @@ function buildDemographics() {
   demographics.forEach(d => {
     const div = document.createElement('div');
     div.className = 'demo-card reveal';
+    
     const header = document.createElement('div'); 
     header.className = 'question-header';
     header.innerHTML = `<div style="display:flex;align-items:center;"><div class="qtext">${escapeHtml(d.label)}</div></div>`;
     div.appendChild(header);
+
     const body = document.createElement('div');
     body.style.marginTop = '8px';
 
-    if (d.name === 'age') {
+    if (!d.opts) {
+      // Числовое поле (например возраст)
       const inp = document.createElement('input');
       inp.type = 'number'; 
       inp.name = d.name; 
       inp.min = 10; 
       inp.max = 120; 
-      inp.placeholder = 'Введите возраст';
+      inp.placeholder = 'Введите значение';
       inp.style.padding = '8px'; 
       inp.style.borderRadius = '8px'; 
       inp.style.border = '1px solid rgba(0,0,0,0.06)';
       body.appendChild(inp);
     } else {
+      // Селект или радио-кнопки
       const optsWrap = document.createElement('div'); 
       optsWrap.className = 'options';
       d.opts.forEach((o, i) => {
@@ -50,15 +54,19 @@ function buildDemographics() {
         lbl.className = 'opt-card'; 
         lbl.tabIndex = 0; 
         lbl.style.padding = '8px';
+
         const input = document.createElement('input'); 
         input.type = 'radio'; 
         input.name = d.name; 
-        input.value = o;
+        input.value = typeof o === 'string' ? o : o.value;
+
         const span = document.createElement('span'); 
         span.className = 'otext'; 
-        span.textContent = o;
+        span.textContent = typeof o === 'string' ? o : o.label;
+
         lbl.appendChild(input); 
         lbl.appendChild(span);
+
         lbl.addEventListener('click', () => {
           const radios = lbl.parentElement.querySelectorAll('input[type=radio][name="' + input.name + '"]');
           radios.forEach(r => r.checked = false);
@@ -66,12 +74,14 @@ function buildDemographics() {
           lbl.parentElement.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
           lbl.classList.add('selected');
         });
+
         lbl.addEventListener('keydown', (ev) => { 
           if (ev.key === 'Enter' || ev.key === ' ') { 
             ev.preventDefault(); 
             lbl.click(); 
           } 
         });
+
         optsWrap.appendChild(lbl);
       });
       body.appendChild(optsWrap);
