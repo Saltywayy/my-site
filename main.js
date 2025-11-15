@@ -18,58 +18,69 @@ const totalQ = questionsData.length;
 let currentIndex = 0;
 let firstAnswerGiven = false;
 
-// Генерация блока демографий
-function renderDemographics() {
-  const container = document.getElementById('demographicsArea');
-  container.innerHTML = ''; // очищаем на случай повторного вызова
+// Построение демографических карточек
+function buildDemographics() {
+  demographicsArea.innerHTML = '';
+  demographics.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'demo-card reveal';
+    const header = document.createElement('div'); 
+    header.className = 'question-header';
+    header.innerHTML = `<div style="display:flex;align-items:center;"><div class="qtext">${escapeHtml(d.label)}</div></div>`;
+    div.appendChild(header);
+    const body = document.createElement('div');
+    body.style.marginTop = '8px';
 
-  demographics.forEach(demo => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'demographic-item';
-    
-    const label = document.createElement('label');
-    label.textContent = demo.label;
-    label.setAttribute('for', demo.name);
-    wrapper.appendChild(label);
-
-    let inputElement;
-
-    if (!demo.opts) {
-      // Если нет опций — это поле ввода числа
-      inputElement = document.createElement('input');
-      inputElement.type = 'number';
-      inputElement.name = demo.name;
-      inputElement.id = demo.name;
-      inputElement.min = 0;
-      inputElement.placeholder = 'Введите число';
+    if (d.name === 'age') {
+      const inp = document.createElement('input');
+      inp.type = 'number'; 
+      inp.name = d.name; 
+      inp.min = 10; 
+      inp.max = 120; 
+      inp.placeholder = 'Введите возраст';
+      inp.style.padding = '8px'; 
+      inp.style.borderRadius = '8px'; 
+      inp.style.border = '1px solid rgba(0,0,0,0.06)';
+      body.appendChild(inp);
     } else {
-      // Если есть опции — создаём select
-      inputElement = document.createElement('select');
-      inputElement.name = demo.name;
-      inputElement.id = demo.name;
-
-      demo.opts.forEach(opt => {
-        const option = document.createElement('option');
-        if (typeof opt === 'string') {
-          option.value = opt;
-          option.textContent = opt;
-        } else {
-          option.value = opt.value;
-          option.textContent = opt.label;
-        }
-        inputElement.appendChild(option);
+      const optsWrap = document.createElement('div'); 
+      optsWrap.className = 'options';
+      d.opts.forEach((o, i) => {
+        const lbl = document.createElement('label'); 
+        lbl.className = 'opt-card'; 
+        lbl.tabIndex = 0; 
+        lbl.style.padding = '8px';
+        const input = document.createElement('input'); 
+        input.type = 'radio'; 
+        input.name = d.name; 
+        input.value = o;
+        const span = document.createElement('span'); 
+        span.className = 'otext'; 
+        span.textContent = o;
+        lbl.appendChild(input); 
+        lbl.appendChild(span);
+        lbl.addEventListener('click', () => {
+          const radios = lbl.parentElement.querySelectorAll('input[type=radio][name="' + input.name + '"]');
+          radios.forEach(r => r.checked = false);
+          input.checked = true;
+          lbl.parentElement.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
+          lbl.classList.add('selected');
+        });
+        lbl.addEventListener('keydown', (ev) => { 
+          if (ev.key === 'Enter' || ev.key === ' ') { 
+            ev.preventDefault(); 
+            lbl.click(); 
+          } 
+        });
+        optsWrap.appendChild(lbl);
       });
+      body.appendChild(optsWrap);
     }
 
-    wrapper.appendChild(inputElement);
-    container.appendChild(wrapper);
+    div.appendChild(body);
+    demographicsArea.appendChild(div);
   });
 }
-
-// Вызов функции для отображения демографий при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-  renderDemographics();
-});
 // Построение вопросов
 function buildQuestions() {
   questionsArea.innerHTML = '';
