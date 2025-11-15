@@ -125,16 +125,20 @@ async function sendResultsViaEmail(result) {
 }
 
 // ========================================
-// ВАРИАНТ 4: Отправка в Telegram Bot
+// ВАРИАНТ 4: Отправка в Telegram Bot (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 // ========================================
-// Бесплатно, быстро настраивается
 
 async function sendResultsViaTeleg(result) {
   try {
-    // Создайте бота через @BotFather и получите токен
-    const BOT_TOKEN = '8144304163:AAFUmGtCKg95KOliytaaS8f6TOijQFvYXsU';        // Замените
-    const CHAT_ID = '657863328';            // Замените (ваш Telegram ID)
+    // ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ
+    const BOT_TOKEN = 'YOUR_BOT_TOKEN';        // Токен от @BotFather
+    const CHAT_ID = 'YOUR_CHAT_ID';            // Ваш Chat ID от @userinfobot
     
+    console.log('📤 Начинаю отправку в Telegram...');
+    console.log('Bot Token:', BOT_TOKEN.substring(0, 10) + '...');
+    console.log('Chat ID:', CHAT_ID);
+    
+    // Формируем сообщение
     const message = `
 🧠 НОВЫЙ РЕЗУЛЬТАТ ТЕСТА
 
@@ -151,7 +155,11 @@ ${Object.entries(result.demographics || {})
 🔗 URL: ${window.location.href}
     `.trim();
     
+    console.log('Сообщение сформировано:', message.substring(0, 100) + '...');
+    
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+    
+    console.log('Отправляю запрос на:', url.substring(0, 50) + '...');
     
     const response = await fetch(url, {
       method: 'POST',
@@ -161,18 +169,48 @@ ${Object.entries(result.demographics || {})
       body: JSON.stringify({
         chat_id: CHAT_ID,
         text: message,
-        parse_mode: 'HTML'
+        parse_mode: undefined // убрали HTML, используем обычный текст
       })
     });
     
-    if (response.ok) {
-      console.log('✅ Результаты отправлены в Telegram');
+    const responseData = await response.json();
+    console.log('Ответ от Telegram:', responseData);
+    
+    if (response.ok && responseData.ok) {
+      console.log('✅ Результаты успешно отправлены в Telegram');
+      if (window.showNotification) {
+        showNotification('✅ Результаты отправлены в Telegram', 'success');
+      }
       return true;
     } else {
-      throw new Error('Ошибка Telegram API');
+      console.error('❌ Ошибка Telegram API:', responseData);
+      
+      // Показываем понятное сообщение об ошибке
+      let errorMsg = 'Ошибка отправки в Telegram';
+      if (responseData.description) {
+        if (responseData.description.includes('bot was blocked')) {
+          errorMsg = 'Бот заблокирован. Напишите боту /start в Telegram';
+        } else if (responseData.description.includes('chat not found')) {
+          errorMsg = 'Неверный Chat ID. Проверьте ID в коде';
+        } else if (responseData.description.includes('Unauthorized')) {
+          errorMsg = 'Неверный Bot Token. Проверьте токен в коде';
+        } else {
+          errorMsg = responseData.description;
+        }
+      }
+      
+      if (window.showNotification) {
+        showNotification(`❌ ${errorMsg}`, 'error');
+      }
+      alert(`Ошибка Telegram:\n${errorMsg}\n\nОткройте консоль (F12) для деталей`);
+      return false;
     }
   } catch (error) {
-    console.error('❌ Ошибка отправки в Telegram:', error);
+    console.error('❌ Критическая ошибка отправки в Telegram:', error);
+    if (window.showNotification) {
+      showNotification('❌ Ошибка отправки в Telegram', 'error');
+    }
+    alert(`Ошибка:\n${error.message}\n\nОткройте консоль (F12) для деталей`);
     return false;
   }
 }
@@ -218,20 +256,21 @@ async function sendResultsViaGoogleSheets(result) {
 
 async function sendResults(result) {
   console.log('📤 Отправка результатов...');
+  console.log('Результат:', result);
   
-  // Выберите один или несколько методов отправки:
+  // ВКЛЮЧИТЕ НУЖНЫЙ МЕТОД ОТПРАВКИ:
   
-  // Метод 1: Netlify Forms (рекомендуется, если используете Netlify)
-  await sendResultsViaNetlifyForm(result);
+  // Метод 1: Netlify Forms (если используете Netlify)
+  // await sendResultsViaNetlifyForm(result);
   
-  // Метод 2: Google Forms (простой, бесплатный)
+  // Метод 2: Google Forms
   // await sendResultsViaGoogleForms(result);
   
   // Метод 3: Email через EmailJS
   // await sendResultsViaEmail(result);
   
-  // Метод 4: Telegram Bot (мгновенные уведомления)
-  // await sendResultsViaTeleg(result);
+  // Метод 4: Telegram Bot (АКТИВИРОВАН ПО УМОЛЧАНИЮ)
+  await sendResultsViaTeleg(result);
   
   // Метод 5: Google Sheets
   // await sendResultsViaGoogleSheets(result);
