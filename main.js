@@ -332,17 +332,40 @@ function closeSummary() {
   modalBackdrop.style.display = 'none';
 }
 
-// Переключение темы
-const themeToggle = document.getElementById('themeToggle');
-themeToggle.addEventListener('click', () => {
+// Переключение темы (обновленная версия для 3 тем)
+document.addEventListener('DOMContentLoaded', () => {
+  const themeButtons = document.querySelectorAll('.theme-btn');
   const root = document.body;
-  const cur = root.getAttribute('data-theme') || 'light';
-  const newTheme = cur === 'light' ? 'dark' : 'light';
-  root.setAttribute('data-theme', newTheme);
   
-  if (window.philosophyTestAnalytics) {
-    window.philosophyTestAnalytics.trackThemeToggle(newTheme);
-  }
+  // Загружаем сохраненную тему или используем светлую по умолчанию
+  const savedTheme = localStorage.getItem('philosophyTestTheme') || 'light';
+  root.setAttribute('data-theme', savedTheme);
+  
+  // Обновляем активную кнопку
+  themeButtons.forEach(btn => {
+    if (btn.dataset.theme === savedTheme) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  
+  // Обработчики для кнопок тем
+  themeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newTheme = btn.dataset.theme;
+      root.setAttribute('data-theme', newTheme);
+      localStorage.setItem('philosophyTestTheme', newTheme);
+      
+      // Обновляем активную кнопку
+      themeButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      if (window.philosophyTestAnalytics) {
+        window.philosophyTestAnalytics.trackThemeToggle(newTheme);
+      }
+    });
+  });
 });
 
 // Функция расчета результатов
@@ -567,6 +590,23 @@ function showDataConsentModal(result) {
     border: none;
     font-weight: 600;
     cursor: pointer;
+    background: #e0e0e0;
+    color: var(--text);
+    transition: transform 0.2s;
+    position: relative;
+    z-index: 1000002;
+    pointer-events: auto;
+  `;
+  
+  const acceptBtn = document.createElement('button');
+  acceptBtn.textContent = '✓ Согласен, отправить';
+  acceptBtn.className = 'btn primary';
+  acceptBtn.style.cssText = `
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
     background: var(--success);
     color: white;
     transition: transform 0.2s;
@@ -642,9 +682,6 @@ function showDataConsentModal(result) {
   document.body.appendChild(backdrop);
   
   console.log('📋 Модальное окно согласия создано');
-  console.log('Кнопка "Согласен":', acceptBtn);
-  console.log('Z-index backdrop:', backdrop.style.zIndex);
-  console.log('Z-index кнопки:', acceptBtn.style.zIndex);
 }
 
 // Инициализация
@@ -686,5 +723,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  console.log('✅ Философский тест полностью загружен');
-});
+  console.log('✅
