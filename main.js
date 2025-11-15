@@ -117,7 +117,6 @@ function buildQuestions() {
       lbl.appendChild(span);
 
       lbl.addEventListener('click', (e) => {
-        // Отслеживаем первый ответ
         if (!firstAnswerGiven) {
           firstAnswerGiven = true;
           if (window.philosophyTestAnalytics) {
@@ -147,7 +146,7 @@ function buildQuestions() {
   });
 }
 
-// Обновление визуального выделения выбранного ответа
+// Визуальное выделение выбранного ответа
 function updateSelectedVisual(container, name) {
   const cards = container.querySelectorAll('.opt-card');
   cards.forEach(c => {
@@ -171,7 +170,7 @@ function observeAll() {
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 }
 
-// Навигация по вопросам
+// Навигация
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 const qCounter = document.getElementById('qCounter');
@@ -196,7 +195,6 @@ function showQuestion(idx) {
   if (cur) io.observe(cur);
   updateProgress();
   
-  // Отслеживаем прогресс
   if (window.philosophyTestAnalytics) {
     window.philosophyTestAnalytics.trackProgress(idx + 1);
   }
@@ -205,7 +203,7 @@ function showQuestion(idx) {
 prevBtn.addEventListener('click', () => showQuestion(currentIndex - 1));
 nextBtn.addEventListener('click', () => showQuestion(currentIndex + 1));
 
-// Обновление глобального прогресса
+// Прогресс
 function updateProgress() {
   const fd = new FormData(document.getElementById('quizForm'));
   let answered = 0;
@@ -217,7 +215,7 @@ function updateProgress() {
   progressText.textContent = `${answered} / ${totalQ}`;
 }
 
-// Модальное окно с ответами
+// Модалка с ответами
 const modalBackdrop = document.getElementById('modalBackdrop');
 const modalContent = document.getElementById('modalContent');
 
@@ -266,20 +264,19 @@ function closeSummary() {
   modalBackdrop.style.display = 'none';
 }
 
-// Переключение темы
+// Тема
 const themeToggle = document.getElementById('themeToggle');
 themeToggle.addEventListener('click', () => {
   const root = document.body;
   const cur = root.getAttribute('data-theme') || 'light';
   const newTheme = cur === 'light' ? 'dark' : 'light';
   root.setAttribute('data-theme', newTheme);
-  
   if (window.philosophyTestAnalytics) {
     window.philosophyTestAnalytics.trackThemeToggle(newTheme);
   }
 });
 
-// Функция расчета результатов
+// Расчет результатов
 function calculate() {
   const fd = new FormData(document.getElementById('quizForm'));
   const counts = {};
@@ -287,15 +284,12 @@ function calculate() {
   let answered = 0;
 
   for (let [key, val] of fd.entries()) {
-    if (!key.startsWith('q')) continue;
-    if (!val) continue;
+    if (!key.startsWith('q') || !val) continue;
     let tags = val.split(',').map(s => s.trim()).filter(Boolean);
-    if (tags.length === 0) continue;
+    if (!tags.length) continue;
     answered++;
     let share = 1 / tags.length;
-    tags.forEach(t => { 
-      if (counts.hasOwnProperty(t)) counts[t] += share; 
-    });
+    tags.forEach(t => { if (counts.hasOwnProperty(t)) counts[t] += share; });
   }
 
   if (!answered) {
@@ -324,11 +318,8 @@ function calculate() {
   let totalW = Object.values(counts).reduce((a, b) => a + b, 0);
   let wSum = 0;
   for (let t in counts) wSum += counts[t] * meaningWeights[t];
-  let mi = 0;
-  if (totalW > 0) {
-    mi = Math.round(wSum / totalW);
-    mi = Math.max(0, Math.min(100, mi));
-  }
+  let mi = totalW ? Math.round(wSum / totalW) : 0;
+  mi = Math.max(0, Math.min(100, mi));
 
   const resultEl = document.getElementById('result');
   resultEl.innerHTML = `
@@ -345,21 +336,22 @@ function calculate() {
     <div id="demo-results" style="margin-top:12px;"><h4>📋 Демографические ответы</h4><div id="demo-content"></div></div>
   `;
 
+  // Описание
   const longDescContainer = document.getElementById('longdesc-content');
   longDescContainer.innerHTML = '';
   if (isMixed) {
-    const p1 = document.createElement('p'); 
-    p1.textContent = philosophyNames[top[0]] + ': ' + (longDesc[top[0]] || '');
-    const p2 = document.createElement('p'); 
-    p2.textContent = philosophyNames[sec[0]] + ': ' + (longDesc[sec[0]] || '');
-    longDescContainer.appendChild(p1); 
-    longDescContainer.appendChild(p2);
+    [top[0], sec[0]].forEach(t => {
+      const p = document.createElement('p');
+      p.textContent = philosophyNames[t] + ': ' + (longDesc[t] || '');
+      longDescContainer.appendChild(p);
+    });
   } else {
     const p = document.createElement('p'); 
     p.textContent = longDesc[top[0]] || '';
     longDescContainer.appendChild(p);
   }
 
+  // Демография
   const demoContent = document.getElementById('demo-content');
   demoContent.innerHTML = '';
   demographics.forEach(d => {
@@ -369,8 +361,8 @@ function calculate() {
     demoContent.appendChild(el);
   });
 
-  // Создаем объект результата для экспорта
-  const result = {
+  // Экспорт
+  const resultObj = {
     philosophy: main,
     subtype: sub,
     meaningIndex: mi,
@@ -379,104 +371,37 @@ function calculate() {
       : longDesc[top[0]] || '',
     demographics: {}
   };
-
-  demographics.forEach(d => {
-    const val = fd.get(d.name);
-    if (val) result.demographics[d.label] = val;
-  });
-
-  // Добавляем кнопки экспорта
-  if (window.philosophyTestExport) {
-    window.philosophyTestExport.addExportButtons(resultEl, result);
-  }
-
-  // Отслеживаем завершение
-  if (window.philosophyTestAnalytics) {
-    window.philosophyTestAnalytics.trackTestComplete(result);
-  }
-  
-  // НОВОЕ: Отправляем результаты вам
-  if (window.sendTestResults) {
-    // Показываем согласие на обработку данных
-    showDataConsentModal(result);
-  }
-}
-
-// Модальное окно согласия на обработку данных
-function showDataConsentModal(result) {
-  const modal = document.createElement('div');
-  modal.className = 'confirm-modal show';
-  modal.innerHTML = `
-    <div class="confirm-content" style="max-width: 500px;">
-      <h3>🔒 Согласие на обработку данных</h3>
-      <p style="line-height: 1.6; margin: 15px 0;">
-        Мы собираем анонимную статистику результатов теста для улучшения качества и проведения исследований.
-      </p>
-      <div style="background: rgba(43, 123, 228, 0.1); padding: 12px; border-radius: 8px; margin: 15px 0;">
-        <p style="margin: 5px 0; font-size: 13px;"><strong>Что будет отправлено:</strong></p>
-        <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px;">
-          <li>Результат теста (философия, подтип, индекс)</li>
-          <li>Демографические данные (возраст, пол, образование)</li>
-          <li>Дата и время прохождения</li>
-        </ul>
-      </div>
-      <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 8px; margin: 15px 0;">
-        <p style="margin: 5px 0; font-size: 13px;"><strong>Что НЕ будет отправлено:</strong></p>
-        <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px;">
-          <li>Ваше имя, email или контакты</li>
-          <li>IP-адрес или местоположение</li>
-          <li>Любые персональные данные</li>
-        </ul>
-      </div>
-      <p style="font-size: 12px; color: var(--muted); margin: 15px 0;">
-        Все данные полностью анонимны и используются только для статистики.
-      </p>
-      <div class="confirm-buttons">
-        <button class="btn" id="dataConsentDecline">Не отправлять</button>
-        <button class="btn primary" id="dataConsentAccept">✓ Согласен, отправить</button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  document.getElementById('dataConsentAccept').addEventListener('click', () => {
-    modal.remove();
-    // Отправляем данные
-    window.sendTestResults(result);
-    showNotification('✅ Спасибо! Данные отправлены анонимно', 'success');
-  });
-  
-  document.getElementById('dataConsentDecline').addEventListener('click', () => {
-    modal.remove();
-    showNotification('Результаты не отправлены', 'info');
-  });
-  
-  // Закрытие по клику вне модального окна
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.remove();
-      showNotification('Результаты не отправлены', 'info');
-    }
-  });
+  demographics.forEach(d => { const val = fd.get(d.name); if (val) resultObj.demographics[d.label] = val; });
+  if (window.philosophyTestExport) window.philosophyTestExport.addExportButtons(resultEl, resultObj);
+  if (window.philosophyTestAnalytics) window.philosophyTestAnalytics.trackTestComplete(resultObj);
+  if (window.sendTestResults) window.sendTestResults(resultObj);
 }
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
+  // Согласие на обработку данных
+  const consentBackdrop = document.getElementById('consentBackdrop');
+  const consentBtn = document.getElementById('consentAgree');
+  if (consentBackdrop && consentBtn) {
+    consentBtn.addEventListener('click', () => {
+      consentBackdrop.remove();
+      document.body.style.overflow = '';
+      console.log('Согласие принято');
+    });
+    document.body.style.overflow = 'hidden';
+  }
+
   buildDemographics();
   buildQuestions();
   observeAll();
   updateProgress();
   showQuestion(0);
 
-  // Инициализация системы сохранения прогресса
-  if (window.philosophyTestStorage) {
-    window.philosophyTestStorage.initProgressSystem();
-  }
+  if (window.philosophyTestStorage) window.philosophyTestStorage.initProgressSystem();
 
-  // Кнопка расчета с валидацией
+  // Кнопка расчета
   const calcBtn = document.getElementById('calcBtn');
-  calcBtn.addEventListener('click', () => {
+  if (calcBtn) calcBtn.addEventListener('click', () => {
     if (window.philosophyTestStorage) {
       window.philosophyTestStorage.enhancedCalculate(calculate);
     } else {
@@ -484,9 +409,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Кнопка сброса с подтверждением
+  // Кнопка сброса
   const resetBtn = document.getElementById('resetBtn');
-  resetBtn.addEventListener('click', (e) => {
+  if (resetBtn) resetBtn.addEventListener('click', (e) => {
     e.preventDefault();
     if (window.philosophyTestStorage) {
       window.philosophyTestStorage.enhancedReset();
