@@ -422,38 +422,20 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       calculate();
     }
-  // --- СИСТЕМА СОГЛАСИЯ НА ОБРАБОТКУ ДАННЫХ ---
+document.addEventListener('DOMContentLoaded', () => {
   const consentBackdrop = document.getElementById('consentBackdrop');
   const consentBtn = document.getElementById('consentAgree');
 
-  // Блокируем интерфейс до согласия
-  function lockTest() {
-    document.body.style.overflow = 'hidden';
-    prevBtn.disabled = true;
-    nextBtn.disabled = true;
-    calcBtn.disabled = true;
-  }
-
-  function unlockTest() {
-    document.body.style.overflow = '';
-    prevBtn.disabled = false;
-    nextBtn.disabled = false;
-    calcBtn.disabled = false;
-  }
-
-  lockTest();
-
   consentBtn.addEventListener('click', () => {
-    consentBackdrop.remove();
-    unlockTest();
-
-    // Логируем (если есть аналитика)
-    if (window.philosophyTestAnalytics) {
-      window.philosophyTestAnalytics.trackConsentGiven();
-    }
+    consentBackdrop.remove(); // скрываем окно
+    document.body.style.overflow = ''; // снимаем блокировку прокрутки
+    console.log('Согласие принято'); // для проверки
   });
-  // --- КОНЕЦ БЛОКА СОГЛАСИЯ ---});
 
+  document.body.style.overflow = 'hidden'; // блокируем прокрутку пока модалка видна
+
+  // …остальной код инициализации теста
+});
   // Кнопка сброса с подтверждением
   const resetBtn = document.getElementById('resetBtn');
   resetBtn.addEventListener('click', (e) => {
