@@ -15,7 +15,7 @@ ${result.description}
 Пройти тест: ${window.location.href}`;
 }
 
-// Экспорт в PDF с поддержкой кириллицы
+// Экспорт в PDF с кириллицей
 async function exportToPDF(result) {
   try {
     if (typeof window.jspdf === 'undefined') {
@@ -25,15 +25,23 @@ async function exportToPDF(result) {
 
     const { jsPDF } = window.jspdf;
     
-    // Создаем PDF с Arial (поддерживает кириллицу)
+    // Создаем PDF
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
+      putOnlyUsedFonts: true
     });
     
-    // Устанавливаем встроенный шрифт с поддержкой Unicode
-    doc.setFont("helvetica");
+    // Добавляем шрифт с поддержкой кириллицы из URL
+    // Используем DejaVu Sans - бесплатный шрифт с кириллицей
+    try {
+      await addCyrillicFont(doc);
+      doc.setFont("DejaVuSans");
+    } catch (error) {
+      console.warn('Не удалось загрузить шрифт, используем стандартный:', error);
+      doc.setFont("helvetica");
+    }
     
     const primaryColor = [43, 123, 228];
     const textColor = [34, 34, 34];
@@ -46,46 +54,42 @@ async function exportToPDF(result) {
     // Заголовок
     doc.setFontSize(24);
     doc.setTextColor(...primaryColor);
-    const title = 'Filosofskiy test';
-    doc.text(title, pageWidth / 2, y, { align: 'center' });
+    doc.text('Философский тест', pageWidth / 2, y, { align: 'center' });
     
     y += 15;
     doc.setFontSize(12);
     doc.setTextColor(...textColor);
-    doc.text('Rezultaty testirovaniya', pageWidth / 2, y, { align: 'center' });
+    doc.text('Результаты тестирования', pageWidth / 2, y, { align: 'center' });
     
     y += 20;
     
     // Основная философия
     doc.setFontSize(14);
     doc.setTextColor(...primaryColor);
-    doc.text('Osnovnaya filosofiya:', margin, y);
+    doc.text('Основная философия:', margin, y);
     y += 8;
     doc.setFontSize(12);
     doc.setTextColor(...textColor);
     
-    // Транслитерация для философии
-    const philosophyTranslit = transliterate(result.philosophy);
-    const splitPhil = doc.splitTextToSize(philosophyTranslit, maxWidth);
+    const splitPhil = doc.splitTextToSize(result.philosophy, maxWidth);
     doc.text(splitPhil, margin, y);
     y += splitPhil.length * 7 + 10;
     
     // Подтип
     doc.setFontSize(14);
     doc.setTextColor(...primaryColor);
-    doc.text('Podtip:', margin, y);
+    doc.text('Подтип:', margin, y);
     y += 8;
     doc.setFontSize(12);
     doc.setTextColor(...textColor);
-    const subtypeTranslit = transliterate(result.subtype);
-    doc.text(subtypeTranslit, margin, y);
+    doc.text(result.subtype, margin, y);
     
     y += 15;
     
     // Индекс смыслоориентации
     doc.setFontSize(14);
     doc.setTextColor(...primaryColor);
-    doc.text('Indeks smysloorientirovanii:', margin, y);
+    doc.text('Индекс смыслоориентации:', margin, y);
     y += 8;
     doc.setFontSize(12);
     doc.setTextColor(...textColor);
@@ -100,16 +104,15 @@ async function exportToPDF(result) {
     
     y += 15;
     
-    // Описание (транслитерация)
+    // Описание
     doc.setFontSize(14);
     doc.setTextColor(...primaryColor);
-    doc.text('Opisanie:', margin, y);
+    doc.text('Описание:', margin, y);
     y += 8;
     doc.setFontSize(11);
     doc.setTextColor(...textColor);
     
-    const descTranslit = transliterate(result.description);
-    const splitDescription = doc.splitTextToSize(descTranslit, maxWidth);
+    const splitDescription = doc.splitTextToSize(result.description, maxWidth);
     
     // Разбиваем по страницам если нужно
     for (let i = 0; i < splitDescription.length; i++) {
@@ -132,7 +135,7 @@ async function exportToPDF(result) {
       
       doc.setFontSize(14);
       doc.setTextColor(...primaryColor);
-      doc.text('Demograficheskie dannye:', margin, y);
+      doc.text('Демографические данные:', margin, y);
       y += 8;
       doc.setFontSize(11);
       doc.setTextColor(...textColor);
@@ -142,9 +145,7 @@ async function exportToPDF(result) {
           doc.addPage();
           y = 20;
         }
-        const keyTranslit = transliterate(key);
-        const valueTranslit = transliterate(String(value));
-        doc.text(`${keyTranslit}: ${valueTranslit}`, margin, y);
+        doc.text(`${key}: ${value}`, margin, y);
         y += 6;
       }
     }
@@ -155,12 +156,12 @@ async function exportToPDF(result) {
       doc.setPage(i);
       doc.setFontSize(9);
       doc.setTextColor(128, 128, 128);
-      doc.text(`Stranitsa ${i} iz ${pageCount}`, pageWidth / 2, 285, { align: 'center' });
-      doc.text(`Filosofskiy test • ${window.location.hostname}`, pageWidth / 2, 290, { align: 'center' });
+      doc.text(`Страница ${i} из ${pageCount}`, pageWidth / 2, 285, { align: 'center' });
+      doc.text(`Философский тест • ${window.location.hostname}`, pageWidth / 2, 290, { align: 'center' });
     }
     
     // Сохранение
-    const filename = `Filosofskiy_test_${transliterate(result.philosophy).replace(/\s+/g, '_')}.pdf`;
+    const filename = `Философский_тест_${result.philosophy.replace(/\s+/g, '_').substring(0, 30)}.pdf`;
     doc.save(filename);
     
     // Отслеживание
@@ -175,20 +176,211 @@ async function exportToPDF(result) {
   }
 }
 
-// Функция транслитерации кириллицы
-function transliterate(text) {
-  const ru = {
-    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
-    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
-    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
-    'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh',
-    'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N', 'О': 'O',
-    'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'Ts',
-    'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
-  };
-  
-  return text.split('').map(char => ru[char] || char).join('');
+// Экспорт в PDF с кириллицей через pdfmake
+async function exportToPDFwithCyrillic(result) {
+  try {
+    if (typeof pdfMake === 'undefined') {
+      console.warn('pdfMake не загружен, используем jsPDF');
+      return exportToPDF(result);
+    }
+
+    console.log('Создаем PDF с кириллицей через pdfmake...');
+
+    // Определение документа
+    const docDefinition = {
+      content: [
+        // Заголовок
+        {
+          text: 'Философский тест',
+          style: 'header',
+          alignment: 'center',
+          margin: [0, 0, 0, 10]
+        },
+        {
+          text: 'Результаты тестирования',
+          style: 'subheader',
+          alignment: 'center',
+          margin: [0, 0, 0, 20]
+        },
+
+        // Основная философия
+        {
+          text: 'Основная философия:',
+          style: 'sectionHeader',
+          margin: [0, 10, 0, 5]
+        },
+        {
+          text: result.philosophy,
+          style: 'content',
+          margin: [0, 0, 0, 15]
+        },
+
+        // Подтип
+        {
+          text: 'Подтип:',
+          style: 'sectionHeader',
+          margin: [0, 0, 0, 5]
+        },
+        {
+          text: result.subtype,
+          style: 'content',
+          margin: [0, 0, 0, 15]
+        },
+
+        // Индекс смыслоориентации
+        {
+          text: 'Индекс смыслоориентации:',
+          style: 'sectionHeader',
+          margin: [0, 0, 0, 5]
+        },
+        {
+          text: `${result.meaningIndex}/100`,
+          style: 'content',
+          margin: [0, 0, 0, 10]
+        },
+
+        // Прогресс-бар (имитация через таблицу)
+        {
+          table: {
+            widths: ['*'],
+            body: [
+              [
+                {
+                  stack: [
+                    {
+                      canvas: [
+                        {
+                          type: 'rect',
+                          x: 0,
+                          y: 0,
+                          w: 515,
+                          h: 15,
+                          color: '#e9eef8'
+                        },
+                        {
+                          type: 'rect',
+                          x: 0,
+                          y: 0,
+                          w: 515 * (result.meaningIndex / 100),
+                          h: 15,
+                          color: '#2b7be4'
+                        }
+                      ]
+                    }
+                  ],
+                  border: [false, false, false, false]
+                }
+              ]
+            ]
+          },
+          layout: 'noBorders',
+          margin: [0, 0, 0, 20]
+        },
+
+        // Описание
+        {
+          text: 'Описание:',
+          style: 'sectionHeader',
+          margin: [0, 0, 0, 5]
+        },
+        {
+          text: result.description,
+          style: 'content',
+          margin: [0, 0, 0, 20]
+        }
+      ],
+      
+      // Стили
+      styles: {
+        header: {
+          fontSize: 24,
+          bold: true,
+          color: '#2b7be4'
+        },
+        subheader: {
+          fontSize: 12,
+          color: '#666'
+        },
+        sectionHeader: {
+          fontSize: 14,
+          bold: true,
+          color: '#2b7be4'
+        },
+        content: {
+          fontSize: 11,
+          color: '#222'
+        },
+        demographics: {
+          fontSize: 10,
+          color: '#444'
+        }
+      },
+      
+      // Параметры страницы
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      
+      // Футер
+      footer: function(currentPage, pageCount) {
+        return {
+          columns: [
+            {
+              text: `Страница ${currentPage} из ${pageCount}`,
+              alignment: 'center',
+              fontSize: 9,
+              color: '#888'
+            }
+          ],
+          margin: [40, 20]
+        };
+      }
+    };
+
+    // Добавляем демографические данные если есть
+    if (result.demographics && Object.keys(result.demographics).length > 0) {
+      docDefinition.content.push(
+        {
+          text: 'Демографические данные:',
+          style: 'sectionHeader',
+          margin: [0, 10, 0, 5],
+          pageBreak: 'before'
+        }
+      );
+      
+      for (const [key, value] of Object.entries(result.demographics)) {
+        docDefinition.content.push({
+          text: `${key}: ${value}`,
+          style: 'demographics',
+          margin: [0, 3, 0, 0]
+        });
+      }
+    }
+
+    // Создаем и скачиваем PDF
+    const fileName = `Философский_тест_${sanitizeFilename(result.philosophy)}.pdf`;
+    pdfMake.createPdf(docDefinition).download(fileName);
+
+    // Отслеживание
+    if (window.philosophyTestAnalytics) {
+      window.philosophyTestAnalytics.trackExport('pdf');
+    }
+
+    showNotification('✅ PDF успешно сохранен с кириллицей!', 'success');
+    return true;
+
+  } catch (error) {
+    console.error('Ошибка при создании PDF через pdfmake:', error);
+    console.log('Пробуем создать через jsPDF...');
+    return exportToPDF(result);
+  }
+}
+
+// Вспомогательная функция для безопасного имени файла
+function sanitizeFilename(str) {
+  return str
+    .replace(/[<>:"/\\|?*]/g, '')
+    .replace(/\s+/g, '_')
+    .substring(0, 50);
 }
 
 // Поделиться в VK
@@ -283,7 +475,14 @@ function addExportButtons(resultElement, result) {
   resultElement.appendChild(tempDiv.firstElementChild);
   
   // Привязываем обработчики
-  document.getElementById('exportPDF').addEventListener('click', () => exportToPDF(result));
+  document.getElementById('exportPDF').addEventListener('click', () => {
+    // Пробуем сначала pdfmake (с кириллицей), если не получится - jsPDF
+    if (typeof pdfMake !== 'undefined') {
+      exportToPDFwithCyrillic(result);
+    } else {
+      exportToPDF(result);
+    }
+  });
   document.getElementById('shareVK').addEventListener('click', () => shareToVK(result));
   document.getElementById('shareTelegram').addEventListener('click', () => shareToTelegram(result));
   document.getElementById('shareWhatsApp').addEventListener('click', () => shareToWhatsApp(result));
