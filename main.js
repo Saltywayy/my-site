@@ -573,4 +573,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // Кнопка расчета с валидацией
   const calcBtn = document.getElementById('calcBtn');
   calcBtn.addEventListener('click', () => {
-    if (window.philosophyTestStorag
+    if (window.philosophyTestStorage) {
+      window.philosophyTestStorage.enhancedCalculate(calculate);
+    } else {
+      calculate();
+    }
+  });
+
+  // Кнопка сброса с подтверждением
+  const resetBtn = document.getElementById('resetBtn');
+  resetBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (window.philosophyTestStorage) {
+      window.philosophyTestStorage.enhancedReset();
+    } else {
+      if (confirm('Вы уверены, что хотите сбросить все ответы?')) {
+        document.getElementById('quizForm').reset();
+        document.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
+        showQuestion(0);
+        updateProgress();
+      }
+    }
+  });
+
+  console.log('✅ Философский тест полностью загружен');
+});
