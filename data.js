@@ -47,28 +47,84 @@ const subtypes = {
   "k": ["Классический мудрец", "Добродетельный аналитик"]
 };
 
-// ===============================
-// Демографические данные
-// ===============================
 const demographics = [
   {name: 'population', label: 'Население вашего населённого пункта', opts: ['до 5 тыс', 'до 30 тыс', 'до 50 тыс', 'до 100 тыс', 'до 500 тыс', 'до 1 млн', 'больше 1 млн']},
   {name: 'education', label: 'Наивысший уровень образования', opts: ['Среднее или ниже', 'Среднее специальное/профессиональное', 'Высшее (бакалавр/специалист)', 'Магистратура/аспирантура', 'Докторская степень']},
   {name: 'field', label: 'В какой области вы работаете или учитесь', opts: ['Гуманитарные науки/искусство', 'Естественные науки/технологии', 'Бизнес/экономика', 'Медицина/здравоохранение', 'Образование', 'Государственная служба', 'Другое', 'Не работаю/не учусь']},
-  {
-    name: 'religion_ident',
-    label: 'Религиозная принадлежность',
-    opts: [
-      {value: 'Верующий (укажите религию)', label: 'Верующий (укажите религию)'},
-      {value: 'Агностик', label: 'Агностик'},
-      {value: 'Атеист', label: 'Атеист'},
-      {value: 'Духовный, но не религиозный', label: 'Духовный, но не религиозный'},
-      {value: 'Другое', label: 'Другое'},
-      {value: 'Предпочитаю не отвечать', label: 'Предпочитаю не отвечать'}
-    ]
-  },
+  {name: 'religion_ident', label: 'Религиозная принадлежность', opts: [
+    {value: 'Верующий (укажите религию)', label: 'Верующий (укажите религию)'},
+    {value: 'Агностик', label: 'Агностик'},
+    {value: 'Атеист', label: 'Атеист'},
+    {value: 'Духовный, но не религиозный', label: 'Духовный, но не религиозный'},
+    {value: 'Другое', label: 'Другое'},
+    {value: 'Предпочитаю не отвечать', label: 'Предпочитаю не отвечать'}
+  ]},
   {name: 'gender', label: 'Пол', opts: ['Мужчина','Женщина','Не указывать']},
   {name: 'age', label: 'Возраст (введите число)', opts: null}
 ];
+
+// Функция для динамического рендеринга select и input для религии
+function renderDemographics() {
+  const container = document.getElementById('demographicsContainer');
+  if (!container) return;
+
+  demographics.forEach(field => {
+    const label = document.createElement('label');
+    label.textContent = field.label;
+    container.appendChild(label);
+
+    if (field.name === 'age') {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.id = field.name;
+      input.placeholder = 'Введите ваш возраст';
+      container.appendChild(input);
+    } else {
+      const select = document.createElement('select');
+      select.id = field.name;
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = '-- Выберите --';
+      select.appendChild(defaultOption);
+
+      field.opts.forEach(opt => {
+        const option = document.createElement('option');
+        if (typeof opt === 'object') {
+          option.value = opt.value;
+          option.textContent = opt.label;
+        } else {
+          option.value = opt;
+          option.textContent = opt;
+        }
+        select.appendChild(option);
+      });
+
+      container.appendChild(select);
+
+      // Ручной ввод для религии
+      if (field.name === 'religion_ident') {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'religion_custom';
+        input.placeholder = 'Укажите свою религию';
+        input.style.display = 'none';
+        container.appendChild(input);
+
+        select.addEventListener('change', () => {
+          if (select.value === 'Верующий (укажите религию)') {
+            input.style.display = 'block';
+          } else {
+            input.style.display = 'none';
+            input.value = '';
+          }
+        });
+      }
+    }
+  });
+}
+
+// Вызов функции после загрузки DOM
+document.addEventListener('DOMContentLoaded', renderDemographics);
 const questionsData = [
   {"q": "Как вы считаете, откуда человек получает смысл?", "opts": [{"txt": "Человек сам создаёт смысл через выбор.", "tags": ["a", "i"]}, {"txt": "Смысл формируется через добродетель.", "tags": ["c", "k"]}, {"txt": "Смысл определяется пользой для общества.", "tags": ["e", "d"]}, {"txt": "Смысл отсутствует.", "tags": ["f", "j"]}, {"txt": "Нет подходящего варианта", "tags": []}]},
   {"q": "Что делает жизнь ценной?", "opts": [{"txt": "Личные переживания.", "tags": ["g", "i"]}, {"txt": "Добродетель.", "tags": ["b", "k"]}, {"txt": "Польза.", "tags": ["e"]}, {"txt": "Ничто.", "tags": ["f"]}, {"txt": "Нет подходящего варианта", "tags": []}]},
