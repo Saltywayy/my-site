@@ -394,6 +394,11 @@ function calculate() {
   if (window.philosophyTestAnalytics) {
     window.philosophyTestAnalytics.trackTestComplete(result);
   }
+  
+  // НОВОЕ: Отправляем результаты вам
+  if (window.sendTestResults) {
+    window.sendTestResults(result);
+  }
 }
 
 // Инициализация
