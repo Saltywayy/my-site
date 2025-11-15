@@ -1,86 +1,103 @@
-// main.js - Основная логика теста
+// main.js - Объединённая логика теста
 
-// Вспомогательные функции
-function random(arr) { 
-  return arr[Math.floor(Math.random() * arr.length)]; 
-}
+// Вспомогательные функции function random(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-function escapeHtml(str) { 
-  return String(str || '').replace(/[&<>"']/g, function(m) { 
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; 
-  }); 
-}
+function escapeHtml(str) { return String(str || '').replace(/[&<>"']/g, function(m) { return {'&':'&','<':'<','>':'>','"':'"',''':'''}[m]; }); }
 
-// Глобальные переменные
-const questionsArea = document.getElementById('questionsArea');
-const demographicsArea = document.getElementById('demographicsArea');
-const totalQ = questionsData.length;
-let currentIndex = 0;
-let firstAnswerGiven = false;
+// Глобальные переменные const questionsArea = document.getElementById('questionsArea'); const demographicsArea = document.getElementById('demographicsArea'); const totalQ = questionsData.length; let currentIndex = 0; let firstAnswerGiven = false;
 
-// Построение демографических карточек
-function buildDemographics() {
-  demographicsArea.innerHTML = '';
-  demographics.forEach(d => {
-    const div = document.createElement('div');
-    div.className = 'demo-card reveal';
-    const header = document.createElement('div'); 
-    header.className = 'question-header';
-    header.innerHTML = `<div style="display:flex;align-items:center;"><div class="qtext">${escapeHtml(d.label)}</div></div>`;
-    div.appendChild(header);
-    const body = document.createElement('div');
-    body.style.marginTop = '8px';
+// Построение демографических карточек с кастомным вводом религии function buildDemographics() { demographicsArea.innerHTML = ''; demographics.forEach(d => { const div = document.createElement('div'); div.className = 'demo-card reveal';
 
-    if (d.name === 'age') {
-      const inp = document.createElement('input');
-      inp.type = 'number'; 
-      inp.name = d.name; 
-      inp.min = 10; 
-      inp.max = 120; 
-      inp.placeholder = 'Введите возраст';
-      inp.style.padding = '8px'; 
-      inp.style.borderRadius = '8px'; 
-      inp.style.border = '1px solid rgba(0,0,0,0.06)';
-      body.appendChild(inp);
-    } else {
-      const optsWrap = document.createElement('div'); 
-      optsWrap.className = 'options';
-      d.opts.forEach((o, i) => {
-        const lbl = document.createElement('label'); 
-        lbl.className = 'opt-card'; 
-        lbl.tabIndex = 0; 
-        lbl.style.padding = '8px';
-        const input = document.createElement('input'); 
-        input.type = 'radio'; 
-        input.name = d.name; 
-        input.value = o;
-        const span = document.createElement('span'); 
-        span.className = 'otext'; 
-        span.textContent = o;
-        lbl.appendChild(input); 
-        lbl.appendChild(span);
-        lbl.addEventListener('click', () => {
-          const radios = lbl.parentElement.querySelectorAll('input[type=radio][name="' + input.name + '"]');
-          radios.forEach(r => r.checked = false);
-          input.checked = true;
-          lbl.parentElement.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
-          lbl.classList.add('selected');
-        });
-        lbl.addEventListener('keydown', (ev) => { 
-          if (ev.key === 'Enter' || ev.key === ' ') { 
-            ev.preventDefault(); 
-            lbl.click(); 
-          } 
-        });
-        optsWrap.appendChild(lbl);
-      });
-      body.appendChild(optsWrap);
-    }
+const header = document.createElement('div');
+header.className = 'question-header';
+header.innerHTML = `<div style="display:flex;align-items:center;"><div class="qtext">${escapeHtml(d.label)}</div></div>`;
+div.appendChild(header);
 
-    div.appendChild(body);
-    demographicsArea.appendChild(div);
+const body = document.createElement('div');
+body.style.marginTop = '8px';
+
+if (d.name === 'age') {
+  const inp = document.createElement('input');
+  inp.type = 'number';
+  inp.name = d.name;
+  inp.min = 10;
+  inp.max = 120;
+  inp.placeholder = 'Введите возраст';
+  inp.style.padding = '8px';
+  inp.style.borderRadius = '8px';
+  inp.style.border = '1px solid rgba(0,0,0,0.06)';
+  inp.style.width = '200px';
+  body.appendChild(inp);
+} else {
+  const optsWrap = document.createElement('div');
+  optsWrap.className = 'options';
+
+  d.opts.forEach((o, i) => {
+    const lbl = document.createElement('label');
+    lbl.className = 'opt-card';
+    lbl.tabIndex = 0;
+    lbl.style.padding = '8px';
+
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = d.name;
+    input.value = o;
+
+    const span = document.createElement('span');
+    span.className = 'otext';
+    span.textContent = o;
+    lbl.appendChild(input);
+    lbl.appendChild(span);
+
+    lbl.addEventListener('click', () => {
+      const radios = lbl.parentElement.querySelectorAll('input[type=radio][name="' + input.name + '"]');
+      radios.forEach(r => r.checked = false);
+      input.checked = true;
+      lbl.parentElement.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
+      lbl.classList.add('selected');
+
+      if (d.allowCustom && i === 0) showCustomInputForReligion(lbl, input, d.name);
+      else hideCustomInputForReligion(d.name);
+    });
+
+    lbl.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); lbl.click(); } });
+    optsWrap.appendChild(lbl);
   });
+
+  body.appendChild(optsWrap);
+
+  if (d.allowCustom) {
+    const customWrap = document.createElement('div');
+    customWrap.id = `custom-${d.name}`;
+    customWrap.style.display = 'none';
+    customWrap.style.marginTop = '10px';
+
+    const customInput = document.createElement('input');
+    customInput.type = 'text';
+    customInput.id = `custom-input-${d.name}`;
+    customInput.placeholder = 'Введите вашу религию';
+    customInput.style.padding = '10px';
+    customInput.style.borderRadius = '8px';
+    customInput.style.border = '2px solid var(--accent)';
+    customInput.style.width = '100%';
+    customInput.style.maxWidth = '400px';
+    customInput.style.fontSize = '14px';
+
+    customWrap.appendChild(customInput);
+    body.appendChild(customWrap);
+  }
 }
+
+div.appendChild(body);
+demographicsArea.appendChild(div);
+
+}); }
+
+function showCustomInputForReligion(labelElement, radioInput, fieldName) { const customWrap = document.getElementById(custom-${fieldName}); const customInput = document.getElementById(custom-input-${fieldName}); if (customWrap && customInput) { customWrap.style.display = 'block'; customInput.focus(); customInput.addEventListener('input', function() { radioInput.value = this.value.trim() ? Верующий: ${this.value} : 'Верующий (укажите религию)'; }); } }
+
+function hideCustomInputForReligion(fieldName) { const customWrap = document.getElementById(custom-${fieldName}); const customInput = document.getElementById(custom-input-${fieldName}); if (customWrap && customInput) { customWrap.style.display = 'none'; customInput.value = ''; } }
+
+// --- остальной функционал из первого кода: buildQuestions, updateSelectedVisual, showQuestion, updateProgress, модальные окна, calculate, themeToggle, инициализация --- // Сохраняется полностью как в первом коде, включая обработку аналитики и экспорт данных, только с добавлением кастомного поля для религии из второго кода.
 
 // Построение вопросов
 function buildQuestions() {
