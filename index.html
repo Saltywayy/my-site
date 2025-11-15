@@ -83,6 +83,14 @@
   </header>
 
   <div class="wrap">
+    <!-- Дисклеймер -->
+    <div class="disclaimer-banner">
+      <div class="disclaimer-icon">ℹ️</div>
+      <div class="disclaimer-text">
+        <strong>Дисклеймер:</strong> Автор этого теста не претендует на научную объективность или профессиональную психологическую точность. Проект создан в рамках школьной работы Клаудом при поддержке школьника. Результаты носят исключительно ознакомительный характер и не должны рассматриваться как экспертное заключение :)
+      </div>
+    </div>
+
     <main class="card" role="main">
       <form id="quizForm" novalidate>
         <div id="demographicsArea"></div>
@@ -125,21 +133,5 @@
   <script src="storage.js"></script>
   <script src="results-sender.js"></script>
   <script src="main.js"></script>
-  
-  <!-- Скрытая форма для Netlify Forms (для отправки результатов) -->
-  <form name="test-results" netlify netlify-honeypot="bot-field" hidden>
-    <input type="text" name="philosophy" />
-    <input type="text" name="subtype" />
-    <input type="text" name="meaningIndex" />
-    <input type="text" name="description" />
-    <input type="text" name="age" />
-    <input type="text" name="gender" />
-    <input type="text" name="education" />
-    <input type="text" name="population" />
-    <input type="text" name="field" />
-    <input type="text" name="religion_ident" />
-    <input type="text" name="timestamp" />
-    <input type="text" name="url" />
-  </form>
 </body>
 </html>
