@@ -470,181 +470,61 @@ function calculate() {
 
 // Модальное окно согласия на обработку данных
 function showDataConsentModal(result) {
-  // Удаляем предыдущее модальное окно если оно есть
-  const existingModal = document.querySelector('.data-consent-modal');
-  if (existingModal) existingModal.remove();
-  
-  // Создаем backdrop
-  const backdrop = document.createElement('div');
-  backdrop.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(2, 6, 23, 0.7);
-    z-index: 999999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.2s;
-  `;
-  backdrop.className = 'data-consent-modal';
-  
-  // Создаем контент
-  const content = document.createElement('div');
-  content.style.cssText = `
-    background: var(--card);
-    padding: 24px;
-    border-radius: 12px;
-    max-width: 500px;
-    width: 90%;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    position: relative;
-    z-index: 1000000;
-  `;
-  
-  content.innerHTML = `
-    <h3 style="margin: 0 0 15px 0; color: var(--text);">🔒 Согласие на обработку данных</h3>
-    <p style="line-height: 1.6; margin: 15px 0; color: var(--text);">
-      Мы собираем анонимную статистику результатов теста для улучшения качества и проведения исследований.
-    </p>
-    <div style="background: rgba(43, 123, 228, 0.1); padding: 12px; border-radius: 8px; margin: 15px 0;">
-      <p style="margin: 5px 0; font-size: 13px; color: var(--text);"><strong>Что будет отправлено:</strong></p>
-      <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px; color: var(--text);">
-        <li>Результат теста (философия, подтип, индекс)</li>
-        <li>Демографические данные (возраст, пол, образование)</li>
-        <li>Дата и время прохождения</li>
-      </ul>
+  const modal = document.createElement('div');
+  modal.className = 'confirm-modal show';
+  modal.innerHTML = `
+    <div class="confirm-content" style="max-width: 500px;">
+      <h3>🔒 Согласие на обработку данных</h3>
+      <p style="line-height: 1.6; margin: 15px 0;">
+        Мы собираем анонимную статистику результатов теста для улучшения качества и проведения исследований.
+      </p>
+      <div style="background: rgba(43, 123, 228, 0.1); padding: 12px; border-radius: 8px; margin: 15px 0;">
+        <p style="margin: 5px 0; font-size: 13px;"><strong>Что будет отправлено:</strong></p>
+        <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px;">
+          <li>Результат теста (философия, подтип, индекс)</li>
+          <li>Демографические данные (возраст, пол, образование)</li>
+          <li>Дата и время прохождения</li>
+        </ul>
+      </div>
+      <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 8px; margin: 15px 0;">
+        <p style="margin: 5px 0; font-size: 13px;"><strong>Что НЕ будет отправлено:</strong></p>
+        <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px;">
+          <li>Ваше имя, email или контакты</li>
+          <li>IP-адрес или местоположение</li>
+          <li>Любые персональные данные</li>
+        </ul>
+      </div>
+      <p style="font-size: 12px; color: var(--muted); margin: 15px 0;">
+        Все данные полностью анонимны и используются только для статистики.
+      </p>
+      <div class="confirm-buttons">
+        <button class="btn" id="dataConsentDecline">Не отправлять</button>
+        <button class="btn primary" id="dataConsentAccept">✓ Согласен, отправить</button>
+      </div>
     </div>
-    <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 8px; margin: 15px 0;">
-      <p style="margin: 5px 0; font-size: 13px; color: var(--text);"><strong>Что НЕ будет отправлено:</strong></p>
-      <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px; color: var(--text);">
-        <li>Ваше имя, email или контакты</li>
-        <li>IP-адрес или местоположение</li>
-        <li>Любые персональные данные</li>
-      </ul>
-    </div>
-    <p style="font-size: 12px; color: var(--muted); margin: 15px 0;">
-      Все данные полностью анонимны и используются только для статистики.
-    </p>
   `;
   
-  // Создаем кнопки отдельно
-  const buttonsDiv = document.createElement('div');
-  buttonsDiv.style.cssText = `
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    margin-top: 20px;
-    position: relative;
-    z-index: 1000001;
-  `;
+  document.body.appendChild(modal);
   
-  const declineBtn = document.createElement('button');
-  declineBtn.textContent = 'Не отправлять';
-  declineBtn.className = 'btn';
-  declineBtn.style.cssText = `
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    background: #e0e0e0;
-    color: var(--text);
-    transition: transform 0.2s;
-    position: relative;
-    z-index: 1000002;
-    pointer-events: auto;
-  `;
-  
-  const acceptBtn = document.createElement('button');
-  acceptBtn.textContent = '✓ Согласен, отправить';
-  acceptBtn.className = 'btn primary';
-  acceptBtn.style.cssText = `
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    background: var(--success);
-    color: white;
-    transition: transform 0.2s;
-    position: relative;
-    z-index: 1000002;
-    pointer-events: auto;
-  `;
-  
-  // Эффект при наведении
-  acceptBtn.onmouseover = () => {
-    acceptBtn.style.transform = 'translateY(-2px)';
-    acceptBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-  };
-  acceptBtn.onmouseout = () => {
-    acceptBtn.style.transform = 'translateY(0)';
-    acceptBtn.style.boxShadow = 'none';
-  };
-  
-  declineBtn.onmouseover = () => {
-    declineBtn.style.transform = 'translateY(-2px)';
-  };
-  declineBtn.onmouseout = () => {
-    declineBtn.style.transform = 'translateY(0)';
-  };
-  
-  // Обработчики событий
-  acceptBtn.onclick = function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('✅ Кнопка "Согласен" нажата');
-    backdrop.remove();
-    
+  document.getElementById('dataConsentAccept').addEventListener('click', () => {
+    modal.remove();
     // Отправляем данные
-    if (window.sendTestResults) {
-      window.sendTestResults(result);
-    }
-    if (window.showNotification) {
-      showNotification('✅ Спасибо! Данные отправлены анонимно', 'success');
-    }
-  };
+    window.sendTestResults(result);
+    showNotification('✅ Спасибо! Данные отправлены анонимно', 'success');
+  });
   
-  declineBtn.onclick = function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('❌ Кнопка "Не отправлять" нажата');
-    backdrop.remove();
-    if (window.showNotification) {
+  document.getElementById('dataConsentDecline').addEventListener('click', () => {
+    modal.remove();
+    showNotification('Результаты не отправлены', 'info');
+  });
+  
+  // Закрытие по клику вне модального окна
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
       showNotification('Результаты не отправлены', 'info');
     }
-  };
-  
-  // Закрытие по клику на backdrop
-  backdrop.onclick = function(e) {
-    if (e.target === backdrop) {
-      console.log('Клик по фону');
-      backdrop.remove();
-      if (window.showNotification) {
-        showNotification('Результаты не отправлены', 'info');
-      }
-    }
-  };
-  
-  // Предотвращаем закрытие при клике на контент
-  content.onclick = function(e) {
-    e.stopPropagation();
-  };
-  
-  // Собираем всё вместе
-  buttonsDiv.appendChild(declineBtn);
-  buttonsDiv.appendChild(acceptBtn);
-  content.appendChild(buttonsDiv);
-  backdrop.appendChild(content);
-  document.body.appendChild(backdrop);
-  
-  console.log('📋 Модальное окно согласия создано');
-  console.log('Кнопка "Согласен":', acceptBtn);
-  console.log('Z-index backdrop:', backdrop.style.zIndex);
-  console.log('Z-index кнопки:', acceptBtn.style.zIndex);
+  });
 }
 
 // Инициализация
