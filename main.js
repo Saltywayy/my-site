@@ -32,7 +32,6 @@ function buildDemographics() {
     body.style.marginTop = '8px';
 
     if (d.name === 'age') {
-      // Поле для ввода возраста
       const inp = document.createElement('input');
       inp.type = 'number'; 
       inp.name = d.name; 
@@ -42,12 +41,10 @@ function buildDemographics() {
       inp.style.padding = '8px'; 
       inp.style.borderRadius = '8px'; 
       inp.style.border = '1px solid rgba(0,0,0,0.06)';
-      inp.style.width = '200px';
       body.appendChild(inp);
     } else {
       const optsWrap = document.createElement('div'); 
       optsWrap.className = 'options';
-      
       d.opts.forEach((o, i) => {
         const lbl = document.createElement('label'); 
         lbl.className = 'opt-card'; 
@@ -62,22 +59,13 @@ function buildDemographics() {
         span.textContent = o;
         lbl.appendChild(input); 
         lbl.appendChild(span);
-        
         lbl.addEventListener('click', () => {
           const radios = lbl.parentElement.querySelectorAll('input[type=radio][name="' + input.name + '"]');
           radios.forEach(r => r.checked = false);
           input.checked = true;
           lbl.parentElement.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
           lbl.classList.add('selected');
-          
-          // Если это поле с allowCustom и выбран первый вариант
-          if (d.allowCustom && i === 0) {
-            showCustomInputForReligion(lbl, input, d.name);
-          } else {
-            hideCustomInputForReligion(d.name);
-          }
         });
-        
         lbl.addEventListener('keydown', (ev) => { 
           if (ev.key === 'Enter' || ev.key === ' ') { 
             ev.preventDefault(); 
@@ -86,66 +74,12 @@ function buildDemographics() {
         });
         optsWrap.appendChild(lbl);
       });
-      
       body.appendChild(optsWrap);
-      
-      // Добавляем скрытое поле для кастомного ввода (для религии)
-      if (d.allowCustom) {
-        const customInputWrap = document.createElement('div');
-        customInputWrap.id = `custom-${d.name}`;
-        customInputWrap.style.display = 'none';
-        customInputWrap.style.marginTop = '10px';
-        
-        const customInput = document.createElement('input');
-        customInput.type = 'text';
-        customInput.id = `custom-input-${d.name}`;
-        customInput.placeholder = 'Введите вашу религию';
-        customInput.style.padding = '10px';
-        customInput.style.borderRadius = '8px';
-        customInput.style.border = '2px solid var(--accent)';
-        customInput.style.width = '100%';
-        customInput.style.maxWidth = '400px';
-        customInput.style.fontSize = '14px';
-        
-        customInputWrap.appendChild(customInput);
-        body.appendChild(customInputWrap);
-      }
     }
 
     div.appendChild(body);
     demographicsArea.appendChild(div);
   });
-}
-
-// Показать поле для ввода религии
-function showCustomInputForReligion(labelElement, radioInput, fieldName) {
-  const customWrap = document.getElementById(`custom-${fieldName}`);
-  const customInput = document.getElementById(`custom-input-${fieldName}`);
-  
-  if (customWrap && customInput) {
-    customWrap.style.display = 'block';
-    customInput.focus();
-    
-    // При вводе текста обновляем value радиокнопки
-    customInput.addEventListener('input', function() {
-      if (this.value.trim()) {
-        radioInput.value = `Верующий: ${this.value}`;
-      } else {
-        radioInput.value = 'Верующий (укажите религию)';
-      }
-    });
-  }
-}
-
-// Скрыть поле для ввода религии
-function hideCustomInputForReligion(fieldName) {
-  const customWrap = document.getElementById(`custom-${fieldName}`);
-  const customInput = document.getElementById(`custom-input-${fieldName}`);
-  
-  if (customWrap && customInput) {
-    customWrap.style.display = 'none';
-    customInput.value = '';
-  }
 }
 
 // Построение вопросов
