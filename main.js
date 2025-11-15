@@ -422,7 +422,37 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       calculate();
     }
+  // --- СИСТЕМА СОГЛАСИЯ НА ОБРАБОТКУ ДАННЫХ ---
+  const consentBackdrop = document.getElementById('consentBackdrop');
+  const consentBtn = document.getElementById('consentAgree');
+
+  // Блокируем интерфейс до согласия
+  function lockTest() {
+    document.body.style.overflow = 'hidden';
+    prevBtn.disabled = true;
+    nextBtn.disabled = true;
+    calcBtn.disabled = true;
+  }
+
+  function unlockTest() {
+    document.body.style.overflow = '';
+    prevBtn.disabled = false;
+    nextBtn.disabled = false;
+    calcBtn.disabled = false;
+  }
+
+  lockTest();
+
+  consentBtn.addEventListener('click', () => {
+    consentBackdrop.remove();
+    unlockTest();
+
+    // Логируем (если есть аналитика)
+    if (window.philosophyTestAnalytics) {
+      window.philosophyTestAnalytics.trackConsentGiven();
+    }
   });
+  // --- КОНЕЦ БЛОКА СОГЛАСИЯ ---});
 
   // Кнопка сброса с подтверждением
   const resetBtn = document.getElementById('resetBtn');
