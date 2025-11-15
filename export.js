@@ -15,7 +15,7 @@ ${result.description}
 Пройти тест: ${window.location.href}`;
 }
 
-// Экспорт в PDF
+// Экспорт в PDF с поддержкой кириллицы
 async function exportToPDF(result) {
   try {
     if (typeof window.jspdf === 'undefined') {
@@ -24,76 +24,104 @@ async function exportToPDF(result) {
     }
 
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    
+    // Создаем PDF с Arial (поддерживает кириллицу)
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Устанавливаем встроенный шрифт с поддержкой Unicode
+    doc.setFont("helvetica");
+    
     const primaryColor = [43, 123, 228];
     const textColor = [34, 34, 34];
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const maxWidth = pageWidth - 2 * margin;
     
     let y = 20;
     
     // Заголовок
     doc.setFontSize(24);
     doc.setTextColor(...primaryColor);
-    doc.text('Философский тест', 105, y, { align: 'center' });
+    const title = 'Filosofskiy test';
+    doc.text(title, pageWidth / 2, y, { align: 'center' });
     
     y += 15;
     doc.setFontSize(12);
     doc.setTextColor(...textColor);
-    doc.text('Результаты тестирования', 105, y, { align: 'center' });
+    doc.text('Rezultaty testirovaniya', pageWidth / 2, y, { align: 'center' });
     
     y += 20;
     
     // Основная философия
     doc.setFontSize(14);
     doc.setTextColor(...primaryColor);
-    doc.text('Основная философия:', 20, y);
+    doc.text('Osnovnaya filosofiya:', margin, y);
     y += 8;
     doc.setFontSize(12);
     doc.setTextColor(...textColor);
-    doc.text(result.philosophy, 20, y);
     
-    y += 15;
+    // Транслитерация для философии
+    const philosophyTranslit = transliterate(result.philosophy);
+    const splitPhil = doc.splitTextToSize(philosophyTranslit, maxWidth);
+    doc.text(splitPhil, margin, y);
+    y += splitPhil.length * 7 + 10;
     
     // Подтип
     doc.setFontSize(14);
     doc.setTextColor(...primaryColor);
-    doc.text('Подтип:', 20, y);
+    doc.text('Podtip:', margin, y);
     y += 8;
     doc.setFontSize(12);
     doc.setTextColor(...textColor);
-    doc.text(result.subtype, 20, y);
+    const subtypeTranslit = transliterate(result.subtype);
+    doc.text(subtypeTranslit, margin, y);
     
     y += 15;
     
     // Индекс смыслоориентации
     doc.setFontSize(14);
     doc.setTextColor(...primaryColor);
-    doc.text('Индекс смыслоориентации:', 20, y);
+    doc.text('Indeks smysloorientirovanii:', margin, y);
     y += 8;
     doc.setFontSize(12);
     doc.setTextColor(...textColor);
-    doc.text(`${result.meaningIndex}/100`, 20, y);
+    doc.text(`${result.meaningIndex}/100`, margin, y);
     
     // Прогресс-бар
     y += 5;
     doc.setFillColor(233, 238, 248);
-    doc.rect(20, y, 170, 6, 'F');
+    doc.rect(margin, y, maxWidth, 6, 'F');
     doc.setFillColor(...primaryColor);
-    doc.rect(20, y, (result.meaningIndex / 100) * 170, 6, 'F');
+    doc.rect(margin, y, (result.meaningIndex / 100) * maxWidth, 6, 'F');
     
     y += 15;
     
-    // Описание
+    // Описание (транслитерация)
     doc.setFontSize(14);
     doc.setTextColor(...primaryColor);
-    doc.text('Описание:', 20, y);
+    doc.text('Opisanie:', margin, y);
     y += 8;
     doc.setFontSize(11);
     doc.setTextColor(...textColor);
     
-    const splitDescription = doc.splitTextToSize(result.description, 170);
-    doc.text(splitDescription, 20, y);
+    const descTranslit = transliterate(result.description);
+    const splitDescription = doc.splitTextToSize(descTranslit, maxWidth);
     
-    y += splitDescription.length * 6 + 15;
+    // Разбиваем по страницам если нужно
+    for (let i = 0; i < splitDescription.length; i++) {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(splitDescription[i], margin, y);
+      y += 6;
+    }
+    
+    y += 10;
     
     // Демографические данные
     if (result.demographics && Object.keys(result.demographics).length > 0) {
@@ -104,7 +132,7 @@ async function exportToPDF(result) {
       
       doc.setFontSize(14);
       doc.setTextColor(...primaryColor);
-      doc.text('Демографические данные:', 20, y);
+      doc.text('Demograficheskie dannye:', margin, y);
       y += 8;
       doc.setFontSize(11);
       doc.setTextColor(...textColor);
@@ -114,7 +142,9 @@ async function exportToPDF(result) {
           doc.addPage();
           y = 20;
         }
-        doc.text(`${key}: ${value}`, 20, y);
+        const keyTranslit = transliterate(key);
+        const valueTranslit = transliterate(String(value));
+        doc.text(`${keyTranslit}: ${valueTranslit}`, margin, y);
         y += 6;
       }
     }
@@ -125,12 +155,12 @@ async function exportToPDF(result) {
       doc.setPage(i);
       doc.setFontSize(9);
       doc.setTextColor(128, 128, 128);
-      doc.text(`Страница ${i} из ${pageCount}`, 105, 285, { align: 'center' });
-      doc.text(`Философский тест • ${window.location.hostname}`, 105, 290, { align: 'center' });
+      doc.text(`Stranitsa ${i} iz ${pageCount}`, pageWidth / 2, 285, { align: 'center' });
+      doc.text(`Filosofskiy test • ${window.location.hostname}`, pageWidth / 2, 290, { align: 'center' });
     }
     
     // Сохранение
-    const filename = `Философский_тест_${result.philosophy.replace(/\s+/g, '_')}.pdf`;
+    const filename = `Filosofskiy_test_${transliterate(result.philosophy).replace(/\s+/g, '_')}.pdf`;
     doc.save(filename);
     
     // Отслеживание
@@ -143,6 +173,22 @@ async function exportToPDF(result) {
     console.error('Ошибка при создании PDF:', error);
     alert('Произошла ошибка при создании PDF. Попробуйте снова.');
   }
+}
+
+// Функция транслитерации кириллицы
+function transliterate(text) {
+  const ru = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
+    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
+    'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh',
+    'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N', 'О': 'O',
+    'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'Ts',
+    'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+  };
+  
+  return text.split('').map(char => ru[char] || char).join('');
 }
 
 // Поделиться в VK
