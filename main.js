@@ -1,190 +1,175 @@
-// main.js - Объединённая логика теста
+// main.js - Основная логика теста
 
-// Вспомогательные функции function random(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+// Вспомогательные функции
+function random(arr) {
+return arr[Math.floor(Math.random() * arr.length)];
+}
 
-function escapeHtml(str) { return String(str || '').replace(/[&<>"']/g, function(m) { return {'&':'&','<':'<','>':'>','"':'"',''':'''}[m]; }); }
+function escapeHtml(str) {
+return String(str || '').replace(/[&<>"']/g, function(m) {
+return {'&':'&','<':'<','>':'>','"':'"',"'":'''}[m];
+});
+}
 
-// Глобальные переменные const questionsArea = document.getElementById('questionsArea'); const demographicsArea = document.getElementById('demographicsArea'); const totalQ = questionsData.length; let currentIndex = 0; let firstAnswerGiven = false;
+// Глобальные переменные
+const questionsArea = document.getElementById('questionsArea');
+const demographicsArea = document.getElementById('demographicsArea');
+const totalQ = questionsData.length;
+let currentIndex = 0;
+let firstAnswerGiven = false;
 
-// Построение демографических карточек с кастомным вводом религии function buildDemographics() { demographicsArea.innerHTML = ''; demographics.forEach(d => { const div = document.createElement('div'); div.className = 'demo-card reveal';
-
+// Построение демографических карточек
+function buildDemographics() {
+demographicsArea.innerHTML = '';
+demographics.forEach(d => {
+const div = document.createElement('div');
+div.className = 'demo-card reveal';
 const header = document.createElement('div');
 header.className = 'question-header';
-header.innerHTML = `<div style="display:flex;align-items:center;"><div class="qtext">${escapeHtml(d.label)}</div></div>`;
+header.innerHTML = <div style="display:flex;align-items:center;"><div class="qtext">${escapeHtml(d.label)}</div></div>;
 div.appendChild(header);
-
 const body = document.createElement('div');
 body.style.marginTop = '8px';
 
-if (d.name === 'age') {
-  const inp = document.createElement('input');
-  inp.type = 'number';
-  inp.name = d.name;
-  inp.min = 10;
-  inp.max = 120;
-  inp.placeholder = 'Введите возраст';
-  inp.style.padding = '8px';
-  inp.style.borderRadius = '8px';
-  inp.style.border = '1px solid rgba(0,0,0,0.06)';
-  inp.style.width = '200px';
-  body.appendChild(inp);
-} else {
-  const optsWrap = document.createElement('div');
-  optsWrap.className = 'options';
+if (d.name === 'age') {  
+  const inp = document.createElement('input');  
+  inp.type = 'number';   
+  inp.name = d.name;   
+  inp.min = 10;   
+  inp.max = 120;   
+  inp.placeholder = 'Введите возраст';  
+  inp.style.padding = '8px';   
+  inp.style.borderRadius = '8px';   
+  inp.style.border = '1px solid rgba(0,0,0,0.06)';  
+  body.appendChild(inp);  
+} else {  
+  const optsWrap = document.createElement('div');   
+  optsWrap.className = 'options';  
+  d.opts.forEach((o, i) => {  
+    const lbl = document.createElement('label');   
+    lbl.className = 'opt-card';   
+    lbl.tabIndex = 0;   
+    lbl.style.padding = '8px';  
+    const input = document.createElement('input');   
+    input.type = 'radio';   
+    input.name = d.name;   
+    input.value = o;  
+    const span = document.createElement('span');   
+    span.className = 'otext';   
+    span.textContent = o;  
+    lbl.appendChild(input);   
+    lbl.appendChild(span);  
+    lbl.addEventListener('click', () => {  
+      const radios = lbl.parentElement.querySelectorAll('input[type=radio][name="' + input.name + '"]');  
+      radios.forEach(r => r.checked = false);  
+      input.checked = true;  
+      lbl.parentElement.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));  
+      lbl.classList.add('selected');  
+    });  
+    lbl.addEventListener('keydown', (ev) => {   
+      if (ev.key === 'Enter' || ev.key === ' ') {   
+        ev.preventDefault();   
+        lbl.click();   
+      }   
+    });  
+    optsWrap.appendChild(lbl);  
+  });  
+  body.appendChild(optsWrap);  
+}  
 
-  d.opts.forEach((o, i) => {
-    const lbl = document.createElement('label');
-    lbl.className = 'opt-card';
-    lbl.tabIndex = 0;
-    lbl.style.padding = '8px';
-
-    const input = document.createElement('input');
-    input.type = 'radio';
-    input.name = d.name;
-    input.value = o;
-
-    const span = document.createElement('span');
-    span.className = 'otext';
-    span.textContent = o;
-    lbl.appendChild(input);
-    lbl.appendChild(span);
-
-    lbl.addEventListener('click', () => {
-      const radios = lbl.parentElement.querySelectorAll('input[type=radio][name="' + input.name + '"]');
-      radios.forEach(r => r.checked = false);
-      input.checked = true;
-      lbl.parentElement.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
-      lbl.classList.add('selected');
-
-      if (d.allowCustom && i === 0) showCustomInputForReligion(lbl, input, d.name);
-      else hideCustomInputForReligion(d.name);
-    });
-
-    lbl.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); lbl.click(); } });
-    optsWrap.appendChild(lbl);
-  });
-
-  body.appendChild(optsWrap);
-
-  if (d.allowCustom) {
-    const customWrap = document.createElement('div');
-    customWrap.id = `custom-${d.name}`;
-    customWrap.style.display = 'none';
-    customWrap.style.marginTop = '10px';
-
-    const customInput = document.createElement('input');
-    customInput.type = 'text';
-    customInput.id = `custom-input-${d.name}`;
-    customInput.placeholder = 'Введите вашу религию';
-    customInput.style.padding = '10px';
-    customInput.style.borderRadius = '8px';
-    customInput.style.border = '2px solid var(--accent)';
-    customInput.style.width = '100%';
-    customInput.style.maxWidth = '400px';
-    customInput.style.fontSize = '14px';
-
-    customWrap.appendChild(customInput);
-    body.appendChild(customWrap);
-  }
-}
-
-div.appendChild(body);
+div.appendChild(body);  
 demographicsArea.appendChild(div);
 
-}); }
-
-function showCustomInputForReligion(labelElement, radioInput, fieldName) { const customWrap = document.getElementById(custom-${fieldName}); const customInput = document.getElementById(custom-input-${fieldName}); if (customWrap && customInput) { customWrap.style.display = 'block'; customInput.focus(); customInput.addEventListener('input', function() { radioInput.value = this.value.trim() ? Верующий: ${this.value} : 'Верующий (укажите религию)'; }); } }
-
-function hideCustomInputForReligion(fieldName) { const customWrap = document.getElementById(custom-${fieldName}); const customInput = document.getElementById(custom-input-${fieldName}); if (customWrap && customInput) { customWrap.style.display = 'none'; customInput.value = ''; } }
-
-// --- остальной функционал из первого кода: buildQuestions, updateSelectedVisual, showQuestion, updateProgress, модальные окна, calculate, themeToggle, инициализация --- // Сохраняется полностью как в первом коде, включая обработку аналитики и экспорт данных, только с добавлением кастомного поля для религии из второго кода.
+});
+}
 
 // Построение вопросов
 function buildQuestions() {
-  questionsArea.innerHTML = '';
-  questionsData.forEach((item, idx) => {
-    const qDiv = document.createElement('div');
-    qDiv.className = 'question-card reveal';
-    qDiv.dataset.index = idx;
-    if (idx !== 0) qDiv.classList.add('hidden');
+questionsArea.innerHTML = '';
+questionsData.forEach((item, idx) => {
+const qDiv = document.createElement('div');
+qDiv.className = 'question-card reveal';
+qDiv.dataset.index = idx;
+if (idx !== 0) qDiv.classList.add('hidden');
+
+const qHeader = document.createElement('div');  
+qHeader.className = 'question-header';  
+qHeader.innerHTML = `<div style="display:flex;align-items:center;"><div class="qnum">#${idx+1}</div><div class="qtext">${escapeHtml(item.q)}</div></div>`;  
+qDiv.appendChild(qHeader);  
+
+const optsWrap = document.createElement('div');  
+optsWrap.className = 'options';  
+item.opts.forEach((opt, oi) => {  
+  const lbl = document.createElement('label');  
+  lbl.className = 'opt-card';  
+  lbl.tabIndex = 0;  
     
-    const qHeader = document.createElement('div');
-    qHeader.className = 'question-header';
-    qHeader.innerHTML = `<div style="display:flex;align-items:center;"><div class="qnum">#${idx+1}</div><div class="qtext">${escapeHtml(item.q)}</div></div>`;
-    qDiv.appendChild(qHeader);
+  const input = document.createElement('input');  
+  input.type = 'radio';  
+  input.name = `q${idx+1}`;  
+  input.value = (opt.tags || []).join(',');  
+  input.dataset.optText = opt.txt;  
+  input.id = `q${idx+1}_o${oi}`;  
+    
+  const span = document.createElement('span');  
+  span.className = 'otext';  
+  span.textContent = opt.txt;  
+  lbl.appendChild(input);  
+  lbl.appendChild(span);  
 
-    const optsWrap = document.createElement('div');
-    optsWrap.className = 'options';
-    item.opts.forEach((opt, oi) => {
-      const lbl = document.createElement('label');
-      lbl.className = 'opt-card';
-      lbl.tabIndex = 0;
+  lbl.addEventListener('click', (e) => {  
+    if (!firstAnswerGiven) {  
+      firstAnswerGiven = true;  
+      if (window.philosophyTestAnalytics) {  
+        window.philosophyTestAnalytics.trackTestStart();  
+      }  
+    }  
       
-      const input = document.createElement('input');
-      input.type = 'radio';
-      input.name = `q${idx+1}`;
-      input.value = (opt.tags || []).join(',');
-      input.dataset.optText = opt.txt;
-      input.id = `q${idx+1}_o${oi}`;
-      
-      const span = document.createElement('span');
-      span.className = 'otext';
-      span.textContent = opt.txt;
-      lbl.appendChild(input);
-      lbl.appendChild(span);
+    const radios = lbl.parentElement.querySelectorAll('input[type=radio][name="' + input.name + '"]');  
+    radios.forEach(r => r.checked = false);  
+    input.checked = true;  
+    updateSelectedVisual(lbl.parentElement, input.name);  
+    updateProgress();  
+  });  
+    
+  lbl.addEventListener('keydown', (ev) => {  
+    if (ev.key === 'Enter' || ev.key === ' ') {  
+      ev.preventDefault();  
+      lbl.click();  
+    }  
+  });  
 
-      lbl.addEventListener('click', (e) => {
-        if (!firstAnswerGiven) {
-          firstAnswerGiven = true;
-          if (window.philosophyTestAnalytics) {
-            window.philosophyTestAnalytics.trackTestStart();
-          }
-        }
-        
-        const radios = lbl.parentElement.querySelectorAll('input[type=radio][name="' + input.name + '"]');
-        radios.forEach(r => r.checked = false);
-        input.checked = true;
-        updateSelectedVisual(lbl.parentElement, input.name);
-        updateProgress();
-      });
-      
-      lbl.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter' || ev.key === ' ') {
-          ev.preventDefault();
-          lbl.click();
-        }
-      });
+  optsWrap.appendChild(lbl);  
+});  
 
-      optsWrap.appendChild(lbl);
-    });
+qDiv.appendChild(optsWrap);  
+questionsArea.appendChild(qDiv);
 
-    qDiv.appendChild(optsWrap);
-    questionsArea.appendChild(qDiv);
-  });
+});
 }
 
 // Визуальное выделение выбранного ответа
 function updateSelectedVisual(container, name) {
-  const cards = container.querySelectorAll('.opt-card');
-  cards.forEach(c => {
-    const inp = c.querySelector('input[type=radio]');
-    if (inp && inp.name === name && inp.checked) {
-      c.classList.add('selected');
-    } else {
-      c.classList.remove('selected');
-    }
-  });
+const cards = container.querySelectorAll('.opt-card');
+cards.forEach(c => {
+const inp = c.querySelector('input[type=radio]');
+if (inp && inp.name === name && inp.checked) {
+c.classList.add('selected');
+} else {
+c.classList.remove('selected');
+}
+});
 }
 
 // IntersectionObserver для анимаций
 const io = new IntersectionObserver((entries) => {
-  entries.forEach(en => {
-    if (en.isIntersecting) en.target.classList.add('visible');
-  });
+entries.forEach(en => {
+if (en.isIntersecting) en.target.classList.add('visible');
+});
 }, {threshold: 0.12});
 
 function observeAll() {
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 }
 
 // Навигация
@@ -195,26 +180,26 @@ const progressBar = document.getElementById('globalProgressBar');
 const progressText = document.getElementById('progressText');
 
 function showQuestion(idx) {
-  if (idx < 0) idx = 0;
-  if (idx >= totalQ) idx = totalQ - 1;
-  
-  const prev = document.querySelector('.question-card:not(.hidden)');
-  if (prev) prev.classList.add('hidden');
-  
-  const cur = document.querySelector(`.question-card[data-index="${idx}"]`);
-  if (cur) cur.classList.remove('hidden');
-  
-  currentIndex = idx;
-  qCounter.textContent = `Вопрос ${idx+1} / ${totalQ}`;
-  prevBtn.disabled = idx === 0;
-  nextBtn.textContent = idx === totalQ - 1 ? 'Последний' : 'Далее';
-  
-  if (cur) io.observe(cur);
-  updateProgress();
-  
-  if (window.philosophyTestAnalytics) {
-    window.philosophyTestAnalytics.trackProgress(idx + 1);
-  }
+if (idx < 0) idx = 0;
+if (idx >= totalQ) idx = totalQ - 1;
+
+const prev = document.querySelector('.question-card:not(.hidden)');
+if (prev) prev.classList.add('hidden');
+
+const cur = document.querySelector(.question-card[data-index="${idx}"]);
+if (cur) cur.classList.remove('hidden');
+
+currentIndex = idx;
+qCounter.textContent = Вопрос ${idx+1} / ${totalQ};
+prevBtn.disabled = idx === 0;
+nextBtn.textContent = idx === totalQ - 1 ? 'Последний' : 'Далее';
+
+if (cur) io.observe(cur);
+updateProgress();
+
+if (window.philosophyTestAnalytics) {
+window.philosophyTestAnalytics.trackProgress(idx + 1);
+}
 }
 
 prevBtn.addEventListener('click', () => showQuestion(currentIndex - 1));
@@ -222,14 +207,14 @@ nextBtn.addEventListener('click', () => showQuestion(currentIndex + 1));
 
 // Прогресс
 function updateProgress() {
-  const fd = new FormData(document.getElementById('quizForm'));
-  let answered = 0;
-  for (let [k, v] of fd.entries()) {
-    if (k.startsWith('q') && v) answered++;
-  }
-  const percent = Math.round((answered / totalQ) * 100);
-  progressBar.style.width = percent + '%';
-  progressText.textContent = `${answered} / ${totalQ}`;
+const fd = new FormData(document.getElementById('quizForm'));
+let answered = 0;
+for (let [k, v] of fd.entries()) {
+if (k.startsWith('q') && v) answered++;
+}
+const percent = Math.round((answered / totalQ) * 100);
+progressBar.style.width = percent + '%';
+progressText.textContent = ${answered} / ${totalQ};
 }
 
 // Модалка с ответами
@@ -239,208 +224,196 @@ const modalContent = document.getElementById('modalContent');
 document.getElementById('openSummary').addEventListener('click', openSummary);
 document.getElementById('showAllBtn').addEventListener('click', openSummary);
 document.getElementById('closeModal').addEventListener('click', closeSummary);
-modalBackdrop.addEventListener('click', (e) => { 
-  if (e.target === modalBackdrop) closeSummary(); 
+modalBackdrop.addEventListener('click', (e) => {
+if (e.target === modalBackdrop) closeSummary();
 });
 
 function openSummary() {
-  const fd = new FormData(document.getElementById('quizForm'));
-  let rows = '<table class="summary-table"><thead><tr><th>#</th><th>Вопрос</th><th>Ответ</th></tr></thead><tbody>';
+const fd = new FormData(document.getElementById('quizForm'));
+let rows = '<table class="summary-table"><thead><tr><th>#</th><th>Вопрос</th><th>Ответ</th></tr></thead><tbody>';
 
-  const demoOrder = ['population', 'education', 'field', 'religion_ident', 'gender', 'age'];
-  let rnum = 0;
-  demoOrder.forEach(name => {
-    rnum++;
-    const val = fd.get(name);
-    const label = demographics.find(d => d.name === name)?.label || name;
-    const text = val ? escapeHtml(val) : 'Не отвечено.';
-    rows += `<tr><td>Д${rnum}</td><td>${escapeHtml(label)}</td><td>${text}</td></tr>`;
-  });
+const demoOrder = ['population', 'education', 'field', 'religion_ident', 'gender', 'age'];
+let rnum = 0;
+demoOrder.forEach(name => {
+rnum++;
+const val = fd.get(name);
+const label = demographics.find(d => d.name === name)?.label || name;
+const text = val ? escapeHtml(val) : 'Не отвечено.';
+rows += <tr><td>Д${rnum}</td><td>${escapeHtml(label)}</td><td>${text}</td></tr>;
+});
 
-  for (let i = 0; i < totalQ; i++) {
-    const qName = `q${i+1}`;
-    const val = fd.get(qName);
-    let text = '';
-    if (val) {
-      const inp = document.querySelector(`input[name="${qName}"][value="${val}"]`);
-      text = inp ? escapeHtml(inp.dataset.optText) : 'Выбран вариант';
-    } else {
-      text = 'Не отвечено.';
-    }
-    rows += `<tr><td>${i+1}</td><td>${escapeHtml(questionsData[i].q)}</td><td>${text}</td></tr>`;
-  }
-  
-  rows += '</tbody></table>';
-  modalContent.innerHTML = rows;
-  modalBackdrop.classList.add('show');
-  modalBackdrop.style.display = 'flex';
+for (let i = 0; i < totalQ; i++) {
+const qName = q${i+1};
+const val = fd.get(qName);
+let text = '';
+if (val) {
+const inp = document.querySelector(input[name="${qName}"][value="${val}"]);
+text = inp ? escapeHtml(inp.dataset.optText) : 'Выбран вариант';
+} else {
+text = 'Не отвечено.';
+}
+rows += <tr><td>${i+1}</td><td>${escapeHtml(questionsData[i].q)}</td><td>${text}</td></tr>;
+}
+
+rows += '</tbody></table>';
+modalContent.innerHTML = rows;
+modalBackdrop.classList.add('show');
+modalBackdrop.style.display = 'flex';
 }
 
 function closeSummary() {
-  modalBackdrop.classList.remove('show');
-  modalBackdrop.style.display = 'none';
+modalBackdrop.classList.remove('show');
+modalBackdrop.style.display = 'none';
 }
 
 // Тема
 const themeToggle = document.getElementById('themeToggle');
 themeToggle.addEventListener('click', () => {
-  const root = document.body;
-  const cur = root.getAttribute('data-theme') || 'light';
-  const newTheme = cur === 'light' ? 'dark' : 'light';
-  root.setAttribute('data-theme', newTheme);
-  if (window.philosophyTestAnalytics) {
-    window.philosophyTestAnalytics.trackThemeToggle(newTheme);
-  }
+const root = document.body;
+const cur = root.getAttribute('data-theme') || 'light';
+const newTheme = cur === 'light' ? 'dark' : 'light';
+root.setAttribute('data-theme', newTheme);
+if (window.philosophyTestAnalytics) {
+window.philosophyTestAnalytics.trackThemeToggle(newTheme);
+}
 });
 
 // Расчет результатов
 function calculate() {
-  const fd = new FormData(document.getElementById('quizForm'));
-  const counts = {};
-  Object.keys(philosophyNames).forEach(t => counts[t] = 0);
-  let answered = 0;
+const fd = new FormData(document.getElementById('quizForm'));
+const counts = {};
+Object.keys(philosophyNames).forEach(t => counts[t] = 0);
+let answered = 0;
 
-  for (let [key, val] of fd.entries()) {
-    if (!key.startsWith('q') || !val) continue;
-    let tags = val.split(',').map(s => s.trim()).filter(Boolean);
-    if (!tags.length) continue;
-    answered++;
-    let share = 1 / tags.length;
-    tags.forEach(t => { if (counts.hasOwnProperty(t)) counts[t] += share; });
-  }
+for (let [key, val] of fd.entries()) {
+if (!key.startsWith('q') || !val) continue;
+let tags = val.split(',').map(s => s.trim()).filter(Boolean);
+if (!tags.length) continue;
+answered++;
+let share = 1 / tags.length;
+tags.forEach(t => { if (counts.hasOwnProperty(t)) counts[t] += share; });
+}
 
-  if (!answered) {
-    document.getElementById('result').textContent = 'Ответьте хотя бы на один вопрос с тегами.';
-    return;
-  }
+if (!answered) {
+document.getElementById('result').textContent = 'Ответьте хотя бы на один вопрос с тегами.';
+return;
+}
 
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const top = sorted[0], sec = sorted[1] || ['-', 0];
+const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+const top = sorted[0], sec = sorted[1] || ['-', 0];
 
-  let main = '', sub = '', desc = '';
-  let isMixed = (top[1] > 0 && sec[1] > 0 && ((top[1] - sec[1]) / top[1]) < 0.20);
+let main = '', sub = '', desc = '';
+let isMixed = (top[1] > 0 && sec[1] > 0 && ((top[1] - sec[1]) / top[1]) < 0.20);
 
-  if (isMixed) {
-    let s1 = Math.round((top[1] / (top[1] + sec[1])) * 100);
-    let s2 = 100 - s1;
-    main = `${escapeHtml(philosophyNames[top[0]])} — ${escapeHtml(philosophyNames[sec[0]])} (${s1}/${s2})`;
-    sub = `${escapeHtml(random(subtypes[top[0]]))} / ${escapeHtml(random(subtypes[sec[0]]))}`;
-    desc = `Смешанный профиль: ${s1}% / ${s2}%.`;
-  } else {
-    main = escapeHtml(philosophyNames[top[0]]);
-    sub = escapeHtml(random(subtypes[top[0]]));
-    desc = '';
-  }
+if (isMixed) {
+let s1 = Math.round((top[1] / (top[1] + sec[1])) * 100);
+let s2 = 100 - s1;
+main = ${escapeHtml(philosophyNames[top[0]])} — ${escapeHtml(philosophyNames[sec[0]])} (${s1}/${s2});
+sub = ${escapeHtml(random(subtypes[top[0]]))} / ${escapeHtml(random(subtypes[sec[0]]))};
+desc = Смешанный профиль: ${s1}% / ${s2}%.;
+} else {
+main = escapeHtml(philosophyNames[top[0]]);
+sub = escapeHtml(random(subtypes[top[0]]));
+desc = '';
+}
 
-  let totalW = Object.values(counts).reduce((a, b) => a + b, 0);
-  let wSum = 0;
-  for (let t in counts) wSum += counts[t] * meaningWeights[t];
-  let mi = totalW ? Math.round(wSum / totalW) : 0;
-  mi = Math.max(0, Math.min(100, mi));
+let totalW = Object.values(counts).reduce((a, b) => a + b, 0);
+let wSum = 0;
+for (let t in counts) wSum += counts[t] * meaningWeights[t];
+let mi = totalW ? Math.round(wSum / totalW) : 0;
+mi = Math.max(0, Math.min(100, mi));
 
-  const resultEl = document.getElementById('result');
-  resultEl.innerHTML = `
-    <h3>Результат</h3>
-    <p><b>Основная философия:</b> ${main}</p>
-    <p><b>Подтип:</b> ${sub}</p>
-    ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}
-    <div class="longdesc"><h4>📖 Подробное описание мировоззрения</h4><div id="longdesc-content"></div></div>
-    <hr>
-    <p><b>Индекс смыслоориентации:</b> ${mi}/100</p>
-    <div style="background:#e9eef8;height:10px;border-radius:999px;overflow:hidden;margin:8px 0;">
-      <div style="height:100%;width:${mi}%;background:var(--accent);transition:width .5s;"></div>
-    </div>
-    <div id="demo-results" style="margin-top:12px;"><h4>📋 Демографические ответы</h4><div id="demo-content"></div></div>
-  `;
+const resultEl = document.getElementById('result');
+resultEl.innerHTML =   <h3>Результат</h3>   <p><b>Основная философия:</b> ${main}</p>   <p><b>Подтип:</b> ${sub}</p>   ${desc ?<p>${escapeHtml(desc)}</p>: ''}   <div class="longdesc"><h4>📖 Подробное описание мировоззрения</h4><div id="longdesc-content"></div></div>   <hr>   <p><b>Индекс смыслоориентации:</b> ${mi}/100</p>   <div style="background:#e9eef8;height:10px;border-radius:999px;overflow:hidden;margin:8px 0;">   <div style="height:100%;width:${mi}%;background:var(--accent);transition:width .5s;"></div>   </div>   <div id="demo-results" style="margin-top:12px;"><h4>📋 Демографические ответы</h4><div id="demo-content"></div></div>  ;
 
-  // Описание
-  const longDescContainer = document.getElementById('longdesc-content');
-  longDescContainer.innerHTML = '';
-  if (isMixed) {
-    [top[0], sec[0]].forEach(t => {
-      const p = document.createElement('p');
-      p.textContent = philosophyNames[t] + ': ' + (longDesc[t] || '');
-      longDescContainer.appendChild(p);
-    });
-  } else {
-    const p = document.createElement('p'); 
-    p.textContent = longDesc[top[0]] || '';
-    longDescContainer.appendChild(p);
-  }
+// Описание
+const longDescContainer = document.getElementById('longdesc-content');
+longDescContainer.innerHTML = '';
+if (isMixed) {
+[top[0], sec[0]].forEach(t => {
+const p = document.createElement('p');
+p.textContent = philosophyNames[t] + ': ' + (longDesc[t] || '');
+longDescContainer.appendChild(p);
+});
+} else {
+const p = document.createElement('p');
+p.textContent = longDesc[top[0]] || '';
+longDescContainer.appendChild(p);
+}
 
-  // Демография
-  const demoContent = document.getElementById('demo-content');
-  demoContent.innerHTML = '';
-  demographics.forEach(d => {
-    const val = fd.get(d.name) || 'Не отвечено.';
-    const el = document.createElement('p'); 
-    el.innerHTML = `<b>${escapeHtml(d.label)}:</b> ${escapeHtml(val)}`;
-    demoContent.appendChild(el);
-  });
+// Демография
+const demoContent = document.getElementById('demo-content');
+demoContent.innerHTML = '';
+demographics.forEach(d => {
+const val = fd.get(d.name) || 'Не отвечено.';
+const el = document.createElement('p');
+el.innerHTML = <b>${escapeHtml(d.label)}:</b> ${escapeHtml(val)};
+demoContent.appendChild(el);
+});
 
-  // Экспорт
-  const resultObj = {
-    philosophy: main,
-    subtype: sub,
-    meaningIndex: mi,
-    description: isMixed 
-      ? `${philosophyNames[top[0]]}: ${longDesc[top[0]]}\n\n${philosophyNames[sec[0]]}: ${longDesc[sec[0]]}`
-      : longDesc[top[0]] || '',
-    demographics: {}
-  };
-  demographics.forEach(d => { const val = fd.get(d.name); if (val) resultObj.demographics[d.label] = val; });
-  if (window.philosophyTestExport) window.philosophyTestExport.addExportButtons(resultEl, resultObj);
-  if (window.philosophyTestAnalytics) window.philosophyTestAnalytics.trackTestComplete(resultObj);
-  if (window.sendTestResults) window.sendTestResults(resultObj);
+// Экспорт
+const resultObj = {
+philosophy: main,
+subtype: sub,
+meaningIndex: mi,
+description: isMixed
+? ${philosophyNames[top[0]]}: ${longDesc[top[0]]}\n\n${philosophyNames[sec[0]]}: ${longDesc[sec[0]]}
+: longDesc[top[0]] || '',
+demographics: {}
+};
+demographics.forEach(d => { const val = fd.get(d.name); if (val) resultObj.demographics[d.label] = val; });
+if (window.philosophyTestExport) window.philosophyTestExport.addExportButtons(resultEl, resultObj);
+if (window.philosophyTestAnalytics) window.philosophyTestAnalytics.trackTestComplete(resultObj);
+if (window.sendTestResults) window.sendTestResults(resultObj);
 }
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
-  // Согласие на обработку данных
-  const consentBackdrop = document.getElementById('consentBackdrop');
-  const consentBtn = document.getElementById('consentAgree');
-  if (consentBackdrop && consentBtn) {
-    consentBtn.addEventListener('click', () => {
-      consentBackdrop.remove();
-      document.body.style.overflow = '';
-      console.log('Согласие принято');
-    });
-    document.body.style.overflow = 'hidden';
-  }
+// Согласие на обработку данных
+const consentBackdrop = document.getElementById('consentBackdrop');
+const consentBtn = document.getElementById('consentAgree');
+if (consentBackdrop && consentBtn) {
+consentBtn.addEventListener('click', () => {
+consentBackdrop.remove();
+document.body.style.overflow = '';
+console.log('Согласие принято');
+});
+document.body.style.overflow = 'hidden';
+}
 
-  buildDemographics();
-  buildQuestions();
-  observeAll();
-  updateProgress();
-  showQuestion(0);
+buildDemographics();
+buildQuestions();
+observeAll();
+updateProgress();
+showQuestion(0);
 
-  if (window.philosophyTestStorage) window.philosophyTestStorage.initProgressSystem();
+if (window.philosophyTestStorage) window.philosophyTestStorage.initProgressSystem();
 
-  // Кнопка расчета
-  const calcBtn = document.getElementById('calcBtn');
-  if (calcBtn) calcBtn.addEventListener('click', () => {
-    if (window.philosophyTestStorage) {
-      window.philosophyTestStorage.enhancedCalculate(calculate);
-    } else {
-      calculate();
-    }
-  });
+// Кнопка расчета
+const calcBtn = document.getElementById('calcBtn');
+if (calcBtn) calcBtn.addEventListener('click', () => {
+if (window.philosophyTestStorage) {
+window.philosophyTestStorage.enhancedCalculate(calculate);
+} else {
+calculate();
+}
+});
 
-  // Кнопка сброса
-  const resetBtn = document.getElementById('resetBtn');
-  if (resetBtn) resetBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (window.philosophyTestStorage) {
-      window.philosophyTestStorage.enhancedReset();
-    } else {
-      if (confirm('Вы уверены, что хотите сбросить все ответы?')) {
-        document.getElementById('quizForm').reset();
-        document.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
-        showQuestion(0);
-        updateProgress();
-      }
-    }
-  });
+// Кнопка сброса
+const resetBtn = document.getElementById('resetBtn');
+if (resetBtn) resetBtn.addEventListener('click', (e) => {
+e.preventDefault();
+if (window.philosophyTestStorage) {
+window.philosophyTestStorage.enhancedReset();
+} else {
+if (confirm('Вы уверены, что хотите сбросить все ответы?')) {
+document.getElementById('quizForm').reset();
+document.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
+showQuestion(0);
+updateProgress();
+}
+}
+});
 
-  console.log('✅ Философский тест полностью загружен');
+console.log('✅ Философский тест полностью загружен');
 });
