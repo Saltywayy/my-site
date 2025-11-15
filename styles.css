@@ -171,8 +171,6 @@ form{display:block;}
   max-width: 450px;
   width: 90%;
   box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  position: relative;
-  z-index: 161;
 }
 .confirm-content h3 {
   margin: 0 0 12px 0;
@@ -187,13 +185,6 @@ form{display:block;}
   display: flex;
   gap: 10px;
   justify-content: flex-end;
-  position: relative;
-  z-index: 162;
-}
-.confirm-buttons .btn {
-  pointer-events: auto;
-  cursor: pointer;
-  user-select: none;
 }
 
 .resume-banner {
@@ -258,4 +249,4 @@ form{display:block;}
   .nav-left,.nav-right{width:100%;}
   .export-buttons{flex-direction:column;}
   .export-buttons .btn{width:100%;}
-    }
+}
