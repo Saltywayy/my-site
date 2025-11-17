@@ -723,4 +723,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  console.log('✅
+  console.log('✅ Философский тест полностью загружен');
+});
