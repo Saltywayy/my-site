@@ -32,7 +32,6 @@ function buildDemographics() {
     body.style.marginTop = '8px';
 
     if (d.name === 'age') {
-      // Поле для ввода возраста
       const inp = document.createElement('input');
       inp.type = 'number'; 
       inp.name = d.name; 
@@ -70,7 +69,6 @@ function buildDemographics() {
           lbl.parentElement.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
           lbl.classList.add('selected');
           
-          // Если это поле с allowCustom и выбран первый вариант
           if (d.allowCustom && i === 0) {
             showCustomInputForReligion(lbl, input, d.name);
           } else {
@@ -89,7 +87,6 @@ function buildDemographics() {
       
       body.appendChild(optsWrap);
       
-      // Добавляем скрытое поле для кастомного ввода (для религии)
       if (d.allowCustom) {
         const customInputWrap = document.createElement('div');
         customInputWrap.id = `custom-${d.name}`;
@@ -117,7 +114,6 @@ function buildDemographics() {
   });
 }
 
-// Показать поле для ввода религии
 function showCustomInputForReligion(labelElement, radioInput, fieldName) {
   const customWrap = document.getElementById(`custom-${fieldName}`);
   const customInput = document.getElementById(`custom-input-${fieldName}`);
@@ -126,7 +122,6 @@ function showCustomInputForReligion(labelElement, radioInput, fieldName) {
     customWrap.style.display = 'block';
     customInput.focus();
     
-    // При вводе текста обновляем value радиокнопки
     customInput.addEventListener('input', function() {
       if (this.value.trim()) {
         radioInput.value = `Верующий: ${this.value}`;
@@ -137,7 +132,6 @@ function showCustomInputForReligion(labelElement, radioInput, fieldName) {
   }
 }
 
-// Скрыть поле для ввода религии
 function hideCustomInputForReligion(fieldName) {
   const customWrap = document.getElementById(`custom-${fieldName}`);
   const customInput = document.getElementById(`custom-input-${fieldName}`);
@@ -148,7 +142,6 @@ function hideCustomInputForReligion(fieldName) {
   }
 }
 
-// Построение вопросов
 function buildQuestions() {
   questionsArea.innerHTML = '';
   questionsData.forEach((item, idx) => {
@@ -183,7 +176,6 @@ function buildQuestions() {
       lbl.appendChild(span);
 
       lbl.addEventListener('click', (e) => {
-        // Отслеживаем первый ответ
         if (!firstAnswerGiven) {
           firstAnswerGiven = true;
           if (window.philosophyTestAnalytics) {
@@ -213,7 +205,6 @@ function buildQuestions() {
   });
 }
 
-// Обновление визуального выделения выбранного ответа
 function updateSelectedVisual(container, name) {
   const cards = container.querySelectorAll('.opt-card');
   cards.forEach(c => {
@@ -226,7 +217,6 @@ function updateSelectedVisual(container, name) {
   });
 }
 
-// IntersectionObserver для анимаций
 const io = new IntersectionObserver((entries) => {
   entries.forEach(en => {
     if (en.isIntersecting) en.target.classList.add('visible');
@@ -237,7 +227,6 @@ function observeAll() {
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 }
 
-// Навигация по вопросам
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 const qCounter = document.getElementById('qCounter');
@@ -262,7 +251,6 @@ function showQuestion(idx) {
   if (cur) io.observe(cur);
   updateProgress();
   
-  // Отслеживаем прогресс
   if (window.philosophyTestAnalytics) {
     window.philosophyTestAnalytics.trackProgress(idx + 1);
   }
@@ -271,7 +259,6 @@ function showQuestion(idx) {
 prevBtn.addEventListener('click', () => showQuestion(currentIndex - 1));
 nextBtn.addEventListener('click', () => showQuestion(currentIndex + 1));
 
-// Обновление глобального прогресса
 function updateProgress() {
   const fd = new FormData(document.getElementById('quizForm'));
   let answered = 0;
@@ -283,7 +270,6 @@ function updateProgress() {
   progressText.textContent = `${answered} / ${totalQ}`;
 }
 
-// Модальное окно с ответами
 const modalBackdrop = document.getElementById('modalBackdrop');
 const modalContent = document.getElementById('modalContent');
 
@@ -332,16 +318,13 @@ function closeSummary() {
   modalBackdrop.style.display = 'none';
 }
 
-// Переключение темы (обновленная версия для 3 тем)
-document.addEventListener('DOMContentLoaded', () => {
+function initThemeToggle() {
   const themeButtons = document.querySelectorAll('.theme-btn');
   const root = document.body;
   
-  // Загружаем сохраненную тему или используем светлую по умолчанию
   const savedTheme = localStorage.getItem('philosophyTestTheme') || 'light';
   root.setAttribute('data-theme', savedTheme);
   
-  // Обновляем активную кнопку
   themeButtons.forEach(btn => {
     if (btn.dataset.theme === savedTheme) {
       btn.classList.add('active');
@@ -350,14 +333,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  // Обработчики для кнопок тем
   themeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const newTheme = btn.dataset.theme;
       root.setAttribute('data-theme', newTheme);
       localStorage.setItem('philosophyTestTheme', newTheme);
       
-      // Обновляем активную кнопку
       themeButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       
@@ -366,9 +347,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
-});
+}
 
-// Функция расчета результатов
 function calculate() {
   const fd = new FormData(document.getElementById('quizForm'));
   const counts = {};
@@ -458,7 +438,6 @@ function calculate() {
     demoContent.appendChild(el);
   });
 
-  // Создаем объект результата для экспорта
   const result = {
     philosophy: main,
     subtype: sub,
@@ -474,30 +453,23 @@ function calculate() {
     if (val) result.demographics[d.label] = val;
   });
 
-  // Добавляем кнопки экспорта
   if (window.philosophyTestExport) {
     window.philosophyTestExport.addExportButtons(resultEl, result);
   }
 
-  // Отслеживаем завершение
   if (window.philosophyTestAnalytics) {
     window.philosophyTestAnalytics.trackTestComplete(result);
   }
   
-  // НОВОЕ: Отправляем результаты вам
   if (window.sendTestResults) {
-    // Показываем согласие на обработку данных
     showDataConsentModal(result);
   }
 }
 
-// Модальное окно согласия на обработку данных
 function showDataConsentModal(result) {
-  // Удаляем предыдущее модальное окно если оно есть
   const existingModal = document.querySelector('.data-consent-modal');
   if (existingModal) existingModal.remove();
   
-  // Создаем backdrop
   const backdrop = document.createElement('div');
   backdrop.style.cssText = `
     position: fixed;
@@ -514,7 +486,6 @@ function showDataConsentModal(result) {
   `;
   backdrop.className = 'data-consent-modal';
   
-  // Создаем контент
   const content = document.createElement('div');
   content.style.cssText = `
     background: var(--card);
@@ -553,7 +524,6 @@ function showDataConsentModal(result) {
     </p>
   `;
   
-  // Создаем кнопки отдельно
   const buttonsDiv = document.createElement('div');
   buttonsDiv.style.cssText = `
     display: flex;
@@ -598,7 +568,6 @@ function showDataConsentModal(result) {
     pointer-events: auto;
   `;
   
-  // Эффект при наведении
   acceptBtn.onmouseover = () => {
     acceptBtn.style.transform = 'translateY(-2px)';
     acceptBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
@@ -615,15 +584,11 @@ function showDataConsentModal(result) {
     declineBtn.style.transform = 'translateY(0)';
   };
   
-  // Обработчики событий
   acceptBtn.onclick = function(e) {
     e.preventDefault();
     e.stopPropagation();
-    console.log('✅ Философский тест полностью загружен');
-}); Кнопка "Согласен" нажата');
     backdrop.remove();
     
-    // Отправляем данные
     if (window.sendTestResults) {
       window.sendTestResults(result);
     }
@@ -635,17 +600,14 @@ function showDataConsentModal(result) {
   declineBtn.onclick = function(e) {
     e.preventDefault();
     e.stopPropagation();
-    console.log('❌ Кнопка "Не отправлять" нажата');
     backdrop.remove();
     if (window.showNotification) {
       showNotification('Результаты не отправлены', 'info');
     }
-  };
+ };
   
-  // Закрытие по клику на backdrop
   backdrop.onclick = function(e) {
     if (e.target === backdrop) {
-      console.log('Клик по фону');
       backdrop.remove();
       if (window.showNotification) {
         showNotification('Результаты не отправлены', 'info');
@@ -653,35 +615,29 @@ function showDataConsentModal(result) {
     }
   };
   
-  // Предотвращаем закрытие при клике на контент
   content.onclick = function(e) {
     e.stopPropagation();
   };
   
-  // Собираем всё вместе
   buttonsDiv.appendChild(declineBtn);
   buttonsDiv.appendChild(acceptBtn);
   content.appendChild(buttonsDiv);
   backdrop.appendChild(content);
   document.body.appendChild(backdrop);
-  
-  console.log('📋 Модальное окно согласия создано');
 }
 
-// Инициализация
 document.addEventListener('DOMContentLoaded', () => {
   buildDemographics();
   buildQuestions();
   observeAll();
   updateProgress();
   showQuestion(0);
+  initThemeToggle();
 
-  // Инициализация системы сохранения прогресса
   if (window.philosophyTestStorage) {
     window.philosophyTestStorage.initProgressSystem();
   }
 
-  // Кнопка расчета с валидацией
   const calcBtn = document.getElementById('calcBtn');
   calcBtn.addEventListener('click', () => {
     if (window.philosophyTestStorage) {
@@ -691,7 +647,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Кнопка сброса с подтверждением
   const resetBtn = document.getElementById('resetBtn');
   resetBtn.addEventListener('click', (e) => {
     e.preventDefault();
