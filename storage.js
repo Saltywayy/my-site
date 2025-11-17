@@ -164,7 +164,7 @@ window.addEventListener('beforeunload', () => {
   saveAnswers();
 });
 
-// Валидация формы
+// ОБНОВЛЕНО: Валидация формы (вариант "Нет подходящего варианта" считается за ответ)
 function validateForm() {
   const form = document.getElementById('quizForm');
   if (!form) return { isValid: false, errors: [], unfilledQuestions: [] };
@@ -181,14 +181,19 @@ function validateForm() {
     }
   });
   
-  // Проверяем вопросы
+  // ИЗМЕНЕНО: Проверяем вопросы - любой выбор (включая "Нет подходящего варианта") считается ответом
   if (typeof questionsData !== 'undefined') {
     for (let i = 1; i <= questionsData.length; i++) {
-      if (!formData.get(`q${i}`)) {
+      const questionName = `q${i}`;
+      // Проверяем, выбрана ли хотя бы одна радиокнопка для этого вопроса
+      const hasAnswer = form.querySelector(`input[name="${questionName}"]:checked`);
+      
+      if (!hasAnswer) {
         unfilledQuestions.push(i);
       }
     }
     
+    // ВАЖНО: Даже если выбран вариант с пустыми тегами (tags: []), это считается ответом
     if (unfilledQuestions.length > 0) {
       errors.push(`Не отвечено на ${unfilledQuestions.length} вопрос(ов): ${unfilledQuestions.slice(0, 5).join(', ')}${unfilledQuestions.length > 5 ? '...' : ''}`);
     }
@@ -278,10 +283,11 @@ function showNotification(message, type = 'info') {
   }, 3000);
 }
 
-// Улучшенная функция расчета с валидацией
+// ОБНОВЛЕНО: Улучшенная функция расчета с валидацией
 function enhancedCalculate(originalCalculateFunc) {
   const validation = validateForm();
   
+  // ИЗМЕНЕНО: Теперь вариант "Нет подходящего варианта" не вызывает предупреждение
   if (!validation.isValid) {
     showNotification('⚠️ Пожалуйста, ответьте на все вопросы', 'warning');
     
@@ -304,6 +310,7 @@ function enhancedCalculate(originalCalculateFunc) {
     return false;
   }
   
+  // Все вопросы отвечены (включая "Нет подходящего варианта")
   originalCalculateFunc();
   clearSavedData();
   return true;
