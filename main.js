@@ -454,16 +454,21 @@ function calculate() {
     if (val) result.demographics[d.label] = val;
   });
 
-  if (window.philosophyTestExport) {
-    window.philosophyTestExport.addExportButtons(resultEl, result);
-  }
-
+  // Отслеживаем завершение
   if (window.philosophyTestAnalytics) {
     window.philosophyTestAnalytics.trackTestComplete(result);
   }
   
-  if (window.sendTestResults) {
+  // Добавляем кнопки экспорта
+  if (window.philosophyTestExport) {
+    window.philosophyTestExport.addExportButtons(resultEl, result);
+  }
+  
+  // Отправляем результаты (показываем модальное окно согласия)
+  if (typeof showDataConsentModal === 'function') {
     showDataConsentModal(result);
+  } else {
+    console.warn('⚠️ Функция showDataConsentModal не найдена');
   }
 }
 
@@ -593,8 +598,7 @@ function showDataConsentModal(result) {
     if (window.sendTestResults) {
       window.sendTestResults(result);
     }
-    if (window.showNotification) {
-      showNotification('✅ Спасибо! Данные отправлены анонимно', 'success');
+    if (window.showNotification) {showNotification('✅ Спасибо! Данные отправлены анонимно', 'success');
     }
   };
   
@@ -665,3 +669,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log('✅ Философский тест полностью загружен');
 });
+     
