@@ -263,7 +263,8 @@ function updateProgress() {
   const fd = new FormData(document.getElementById('quizForm'));
   let answered = 0;
   for (let [k, v] of fd.entries()) {
-    if (k.startsWith('q') && v) answered++;
+    // Считаем ответом даже пустое значение (вариант "Нет подходящего варианта")
+    if (k.startsWith('q')) answered++;
   }
   const percent = Math.round((answered / totalQ) * 100);
   progressBar.style.width = percent + '%';
@@ -604,7 +605,7 @@ function showDataConsentModal(result) {
     if (window.showNotification) {
       showNotification('Результаты не отправлены', 'info');
     }
- };
+  };
   
   backdrop.onclick = function(e) {
     if (e.target === backdrop) {
