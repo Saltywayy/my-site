@@ -590,23 +590,6 @@ function showDataConsentModal(result) {
     border: none;
     font-weight: 600;
     cursor: pointer;
-    background: #e0e0e0;
-    color: var(--text);
-    transition: transform 0.2s;
-    position: relative;
-    z-index: 1000002;
-    pointer-events: auto;
-  `;
-  
-  const acceptBtn = document.createElement('button');
-  acceptBtn.textContent = '✓ Согласен, отправить';
-  acceptBtn.className = 'btn primary';
-  acceptBtn.style.cssText = `
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
     background: var(--success);
     color: white;
     transition: transform 0.2s;
@@ -636,7 +619,8 @@ function showDataConsentModal(result) {
   acceptBtn.onclick = function(e) {
     e.preventDefault();
     e.stopPropagation();
-    console.log('✅ Кнопка "Согласен" нажата');
+    console.log('✅ Философский тест полностью загружен');
+}); Кнопка "Согласен" нажата');
     backdrop.remove();
     
     // Отправляем данные
