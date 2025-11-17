@@ -287,8 +287,8 @@ function showNotification(message, type = 'info') {
 function enhancedCalculate(originalCalculateFunc) {
   const validation = validateForm();
   
-  // ИЗМЕНЕНО: Теперь вариант "Нет подходящего варианта" не вызывает предупреждение
-  if (!validation.isValid) {
+  // ИЗМЕНЕНО: Если есть реально незаполненные вопросы (ни один вариант не выбран)
+  if (!validation.isValid && validation.unfilledQuestions.length > 0) {
     showNotification('⚠️ Пожалуйста, ответьте на все вопросы', 'warning');
     
     setTimeout(() => {
@@ -303,14 +303,12 @@ function enhancedCalculate(originalCalculateFunc) {
       );
     }, 500);
     
-    if (validation.unfilledQuestions.length > 0) {
-      highlightUnfilledQuestions(validation.unfilledQuestions.slice(0, 5));
-    }
+    highlightUnfilledQuestions(validation.unfilledQuestions.slice(0, 5));
     
     return false;
   }
   
-  // Все вопросы отвечены (включая "Нет подходящего варианта")
+  // Если все вопросы отвечены (включая "Нет подходящего варианта"), сразу считаем
   originalCalculateFunc();
   clearSavedData();
   return true;
