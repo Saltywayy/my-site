@@ -84,11 +84,17 @@
 
   // Отображение таймера сессии (опционально)
   function showSessionTimer() {
+    // Проверяем, не существует ли уже таймер
+    if (document.getElementById('sessionTimer')) {
+      return;
+    }
+
     const timerEl = document.createElement('div');
     timerEl.id = 'sessionTimer';
     timerEl.innerHTML = '⏱️ <span id="timerValue">0:00</span>';
     document.body.appendChild(timerEl);
 
+    // Обновляем каждую секунду
     setInterval(() => {
       const duration = getSessionDuration();
       const valueEl = document.getElementById('timerValue');
@@ -96,6 +102,8 @@
         valueEl.textContent = duration;
       }
     }, 1000);
+    
+    console.log('⏱️ Таймер сессии запущен');
   }
 
   // Экспорт функций
@@ -115,7 +123,7 @@
   console.log('⏱️ Время сессии:', getSessionDuration());
   console.log('🔄 Прохождений с устройства:', getCompletionCount());
 
-  // Показываем таймер (можно отключить)
-  // showSessionTimer();
+  // ✅ ВКЛЮЧАЕМ таймер автоматически
+  showSessionTimer();
 
 })();
