@@ -113,10 +113,13 @@
     getSessionDuration,
     getCompletionCount,
     incrementCompletionCount: incrementCompletionCount,
+
+    // 🔥 Добавляем совместимость с results-sender.js
+    incrementTestCompletionCount: incrementCompletionCount,
+
     getSessionData,
     showSessionTimer
-  };
-
+};
   // Инициализация при загрузке
   console.log('📊 Session Tracker инициализирован');
   console.log('🆔 Device ID:', getDeviceId());
