@@ -534,7 +534,7 @@ function calculate() {
 }
 
 function showDataConsentModal(result) {
-  const translate = t();
+  const translate = getTranslate();
   const existingModal = document.querySelector('.data-consent-modal');
   if (existingModal) existingModal.remove();
   
