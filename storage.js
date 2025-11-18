@@ -240,28 +240,41 @@ function highlightUnfilledQuestions(questionNumbers) {
 function showConfirmModal(title, message, onConfirm, onCancel) {
   const modal = document.createElement('div');
   modal.className = 'confirm-modal show';
+  
+  // Если onConfirm === null, показываем только кнопку "Понятно" (без подтверждения)
+  const buttonsHtml = onConfirm !== null 
+    ? `<button class="btn" id="confirmCancel">Отмена</button>
+       <button class="btn primary" id="confirmOk">Подтвердить</button>`
+    : `<button class="btn primary" id="confirmCancel">Понятно</button>`;
+  
   modal.innerHTML = `
     <div class="confirm-content">
       <h3>${title}</h3>
       <p>${message}</p>
       <div class="confirm-buttons">
-        <button class="btn" id="confirmCancel">Отмена</button>
-        <button class="btn primary" id="confirmOk">Подтвердить</button>
+        ${buttonsHtml}
       </div>
     </div>
   `;
   
   document.body.appendChild(modal);
   
-  document.getElementById('confirmOk').addEventListener('click', () => {
-    modal.remove();
-    if (onConfirm) onConfirm();
-  });
+  const okBtn = document.getElementById('confirmOk');
+  const cancelBtn = document.getElementById('confirmCancel');
   
-  document.getElementById('confirmCancel').addEventListener('click', () => {
-    modal.remove();
-    if (onCancel) onCancel();
-  });
+  if (okBtn) {
+    okBtn.addEventListener('click', () => {
+      modal.remove();
+      if (onConfirm) onConfirm();
+    });
+  }
+  
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      modal.remove();
+      if (onCancel) onCancel();
+    });
+  }
   
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
@@ -284,7 +297,7 @@ function showNotification(message, type = 'info') {
   }, 3000);
 }
 
-// ОБНОВЛЕНО: Улучшенная функция расчета с валидацией
+// ОБНОВЛЕНО: Улучшенная функция расчета с СТРОГОЙ валидацией
 function enhancedCalculate(originalCalculateFunc) {
   const validation = validateForm();
   
@@ -294,28 +307,29 @@ function enhancedCalculate(originalCalculateFunc) {
     return false;
   }
   
-  // Проверяем: есть ли реально незаполненные вопросы (ни один вариант не выбран)
+  // ВАЖНО: Проверяем что ВСЕ вопросы отвечены
   if (validation.unfilledQuestions && validation.unfilledQuestions.length > 0) {
-    showNotification('⚠️ Пожалуйста, ответьте на все вопросы', 'warning');
+    showNotification(`⚠️ Ответьте на все ${validation.unfilledQuestions.length} вопросов`, 'warning');
     
+    // Показываем информацию о незаполненных вопросах
     setTimeout(() => {
-      const errorList = validation.errors.slice(0, 3).join('\n');
       showConfirmModal(
         'Есть незаполненные вопросы',
-        `Не отвечено на ${validation.unfilledQuestions.length} вопрос(ов).\n\nВы можете продолжить без заполнения всех полей, но результаты будут менее точными.`,
+        `Не отвечено на ${validation.unfilledQuestions.length} вопрос(ов).\n\nНеобходимо ответить на ВСЕ вопросы для получения результатов.`,
+        null, // НЕТ кнопки подтверждения - только отмена
         () => {
-          originalCalculateFunc();
-          clearSavedData();
+          console.log('Пользователь отменил расчет');
         }
       );
     }, 500);
     
     highlightUnfilledQuestions(validation.unfilledQuestions.slice(0, 5));
     
+    // КРИТИЧНО: НЕ вызываем originalCalculateFunc() - блокируем расчет
     return false;
   }
   
-  // ✅ Все поля заполнены (демография + все вопросы) - считаем и отправляем
+  // ✅ ВСЕ поля заполнены (демография + ВСЕ 40 вопросов) - разрешаем расчет и отправку
   originalCalculateFunc();
   clearSavedData();
   return true;
