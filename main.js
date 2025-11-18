@@ -67,7 +67,7 @@ window.rebuildInterface = rebuildInterface;
 
 // Построение демографических карточек
 function buildDemographics() {
-  const translate = t();
+  const translate = getTranslate();
   demographicsArea.innerHTML = '';
   
   const demographics = getDemographics();
@@ -289,7 +289,7 @@ const progressBar = document.getElementById('globalProgressBar');
 const progressText = document.getElementById('progressText');
 
 function showQuestion(idx) {
-  const translate = t();
+  const translate = getTranslate();
   if (idx < 0) idx = 0;
   if (idx >= totalQ) idx = totalQ - 1;
   
