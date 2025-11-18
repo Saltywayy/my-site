@@ -317,3 +317,27 @@ function updateDataForLanguage() {
 window.updateDataForLanguage = updateDataForLanguage;
 
 console.log('📊 Данные с поддержкой i18n загружены');
+// Глобальная инициализация данных
+window.questionsDataRu = questionsDataRu;
+window.questionsDataEn = questionsDataEn;
+window.questionsData = questionsDataRu; // Начальное значение
+window.getQuestionsData = getQuestionsData;
+
+// Функция обновления данных при смене языка
+function updateDataForLanguage() {
+  const lang = window.philosophyTestI18n?.getCurrentLanguage() || 'ru';
+  window.questionsData = lang === 'en' ? questionsDataEn : questionsDataRu;
+  window.philosophyNames = getPhilosophyNames();
+  window.subtypes = getSubtypes();
+  window.longDesc = getLongDesc();
+  window.demographics = getDemographics();
+  
+  console.log(`📊 Данные обновлены для языка: ${lang}, вопросов: ${window.questionsData.length}`);
+}
+
+window.updateDataForLanguage = updateDataForLanguage;
+
+// Первоначальная инициализация
+updateDataForLanguage();
+
+console.log('📊 Данные с поддержкой i18n загружены, вопросов:', window.questionsData.length);
