@@ -1,376 +1,145 @@
-// results-sender.js - Отправка результатов вам
+// results-sender.js - Отправка результатов в Telegram с временем и Device ID
 
-// ========================================
-// ВАРИАНТ 1: Отправка через Netlify Forms (РЕКОМЕНДУЕТСЯ)
-// ========================================
-// Netlify автоматически обрабатывает формы и отправляет на email
+(function() {
+  'use strict';
 
-async function sendResultsViaNetlifyForm(result, formData) {
-  try {
-    const data = new FormData();
-    data.append('form-name', 'test-results');
-    data.append('philosophy', result.philosophy);
-    data.append('subtype', result.subtype);
-    data.append('meaningIndex', result.meaningIndex);
-    data.append('description', result.description);
+  // ⚠️ ВАЖНО: Замените на ваши данные
+  const TELEGRAM_BOT_TOKEN = '8144304163:AAFUmGtCKg95KOliytaaS8f6TOijQFvYXsU'; // Получите у @BotFather
+  const TELEGRAM_CHAT_ID = '657863328'; // Ваш chat_id
+
+  // Форматирование результатов для отправки в Telegram
+  function formatResultsForTelegram(result) {
+    const sessionData = window.philosophyTestSession?.getSessionData() || {};
     
-    // Добавляем демографические данные
-    if (result.demographics) {
-      for (const [key, value] of Object.entries(result.demographics)) {
-        data.append(key, value);
-      }
+    let message = '📊 *НОВЫЙ РЕЗУЛЬТАТ ТЕСТА*\n\n';
+    
+    // Device ID и статистика
+    message += `🆔 *Device ID:* \`${sessionData.deviceId || 'N/A'}\`\n`;
+    message += `🔄 *Прохождений с устройства:* ${sessionData.completionCount || 0}\n`;
+    message += `⏱️ *Время на сайте:* ${sessionData.sessionTimeFormatted || 'N/A'}\n`;
+    message += `📅 *Дата:* ${new Date().toLocaleString('ru-RU')}\n\n`;
+    
+    // Результаты теста
+    message += `🧠 *Философия:* ${result.philosophy}\n`;
+    message += `🎭 *Подтип:* ${result.subtype}\n`;
+    message += `📈 *Индекс смысла:* ${result.meaningIndex}/100\n\n`;
+    
+    // Демография
+    message += '👤 *ДЕМОГРАФИЯ:*\n';
+    for (let [key, value] of Object.entries(result.demographics || {})) {
+      message += `• ${key}: ${value}\n`;
     }
     
-    // Добавляем timestamp
-    data.append('timestamp', new Date().toISOString());
-    data.append('url', window.location.href);
+    // Техническая информация
+    message += `\n🖥️ *ТЕХНИЧЕСКАЯ ИНФОРМАЦИЯ:*\n`;
+    message += `• Браузер: ${sessionData.userAgent?.substring(0, 50) || 'N/A'}...\n`;
+    message += `• Язык: ${sessionData.language || 'N/A'}\n`;
+    message += `• Разрешение: ${sessionData.screenResolution || 'N/A'}\n`;
+    message += `• Часовой пояс: ${sessionData.timezone || 'N/A'}\n`;
+    message += `• Начало сессии: ${sessionData.startTime || 'N/A'}\n`;
     
-    const response = await fetch('/', {
-      method: 'POST',
-      body: data
-    });
-    
-    if (response.ok) {
-      console.log('✅ Результаты отправлены через Netlify Form');
-      return true;
+    // Статус устройства
+    const completionCount = sessionData.completionCount || 0;
+    if (completionCount === 1) {
+      message += `\n✅ *Первое прохождение с этого устройства*`;
     } else {
-      throw new Error('Ошибка отправки');
-    }
-  } catch (error) {
-    console.error('❌ Ошибка отправки результатов:', error);
-    return false;
-  }
-}
-
-// ========================================
-// ВАРИАНТ 2: Отправка через Google Forms
-// ========================================
-// Бесплатно, все результаты попадают в Google Sheets
-
-async function sendResultsViaGoogleForms(result) {
-  try {
-    // ЗАМЕНИТЕ НА ВАШ URL Google Forms
-    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/YOUR_FORM_ID/formResponse';
-    
-    // ID полей из вашей Google формы (см. инструкцию ниже)
-    const FIELD_IDS = {
-      philosophy: 'entry.123456789',      // Замените на реальные ID
-      subtype: 'entry.987654321',
-      meaningIndex: 'entry.111111111',
-      age: 'entry.222222222',
-      gender: 'entry.333333333'
-    };
-    
-    const data = new FormData();
-    data.append(FIELD_IDS.philosophy, result.philosophy);
-    data.append(FIELD_IDS.subtype, result.subtype);
-    data.append(FIELD_IDS.meaningIndex, result.meaningIndex);
-    
-    if (result.demographics) {
-      data.append(FIELD_IDS.age, result.demographics['Возраст'] || '');
-      data.append(FIELD_IDS.gender, result.demographics['Пол'] || '');
+      message += `\n⚠️ *Повторное прохождение (#${completionCount})*`;
     }
     
-    await fetch(GOOGLE_FORM_URL, {
-      method: 'POST',
-      body: data,
-      mode: 'no-cors' // Важно для Google Forms
-    });
-    
-    console.log('✅ Результаты отправлены в Google Forms');
-    return true;
-  } catch (error) {
-    console.error('❌ Ошибка отправки в Google Forms:', error);
-    return false;
+    return message;
   }
-}
 
-// ========================================
-// ВАРИАНТ 3: Отправка через Email (EmailJS)
-// ========================================
-// Бесплатно 200 писем/месяц
-
-async function sendResultsViaEmail(result) {
-  try {
-    // Настройте на https://www.emailjs.com/
-    const SERVICE_ID = 'YOUR_SERVICE_ID';      // Замените
-    const TEMPLATE_ID = 'YOUR_TEMPLATE_ID';    // Замените
-    const PUBLIC_KEY = 'YOUR_PUBLIC_KEY';      // Замените
-    
-    if (!window.emailjs) {
-      console.error('EmailJS не загружен');
-      return false;
-    }
-    
-    const templateParams = {
-      philosophy: result.philosophy,
-      subtype: result.subtype,
-      meaningIndex: result.meaningIndex,
-      description: result.description,
-      age: result.demographics?.['Возраст'] || 'Не указан',
-      gender: result.demographics?.['Пол'] || 'Не указан',
-      education: result.demographics?.['Наивысший уровень образования'] || 'Не указано',
-      timestamp: new Date().toLocaleString('ru-RU'),
-      url: window.location.href
-    };
-    
-    await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
-    
-    console.log('✅ Результаты отправлены на email');
-    return true;
-  } catch (error) {
-    console.error('❌ Ошибка отправки email:', error);
-    return false;
-  }
-}
-
-// ========================================
-// ВАРИАНТ 4: Отправка в Telegram Bot (ИСПРАВЛЕННАЯ ВЕРСИЯ)
-// ========================================
-
-async function sendResultsViaTeleg(result) {
-  try {
-    // ЗАМЕНИТЕ НА ВАШИ ДАННЫЕ
-    const BOT_TOKEN = '8144304163:AAFUmGtCKg95KOliytaaS8f6TOijQFvYXsU';        // Токен от @BotFather
-    const CHAT_ID = '657863328';            // Ваш Chat ID от @userinfobot
-    
-    console.log('📤 Начинаю отправку в Telegram...');
-    console.log('Bot Token:', BOT_TOKEN.substring(0, 10) + '...');
-    console.log('Chat ID:', CHAT_ID);
-    
-    // Формируем сообщение
-    const message = `
-🧠 НОВЫЙ РЕЗУЛЬТАТ ТЕСТА
-
-📖 Философия: ${result.philosophy}
-🎯 Подтип: ${result.subtype}
-📊 Индекс: ${result.meaningIndex}/100
-
-👤 Демография:
-${Object.entries(result.demographics || {})
-  .map(([k, v]) => `• ${k}: ${v}`)
-  .join('\n')}
-
-🕒 Время: ${new Date().toLocaleString('ru-RU')}
-🔗 URL: ${window.location.href}
-    `.trim();
-    
-    console.log('Сообщение сформировано:', message.substring(0, 100) + '...');
-    
-    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-    
-    console.log('Отправляю запрос на:', url.substring(0, 50) + '...');
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: message,
-        parse_mode: undefined // убрали HTML, используем обычный текст
-      })
-    });
-    
-    const responseData = await response.json();
-    console.log('Ответ от Telegram:', responseData);
-    
-    if (response.ok && responseData.ok) {
-      console.log('✅ Результаты успешно отправлены в Telegram');
-      if (window.showNotification) {
-        showNotification('✅ Результаты отправлены в Telegram', 'success');
-      }
-      return true;
-    } else {
-      console.error('❌ Ошибка Telegram API:', responseData);
+  // Отправка в Telegram
+  async function sendToTelegram(result) {
+    try {
+      const message = formatResultsForTelegram(result);
       
-      // Показываем понятное сообщение об ошибке
-      let errorMsg = 'Ошибка отправки в Telegram';
-      if (responseData.description) {
-        if (responseData.description.includes('bot was blocked')) {
-          errorMsg = 'Бот заблокирован. Напишите боту /start в Telegram';
-        } else if (responseData.description.includes('chat not found')) {
-          errorMsg = 'Неверный Chat ID. Проверьте ID в коде';
-        } else if (responseData.description.includes('Unauthorized')) {
-          errorMsg = 'Неверный Bot Token. Проверьте токен в коде';
-        } else {
-          errorMsg = responseData.description;
+      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: 'Markdown'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Telegram API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.ok) {
+        console.log('✅ Результаты успешно отправлены в Telegram');
+        
+        // Увеличиваем счетчик прохождений
+        if (window.philosophyTestSession) {
+          window.philosophyTestSession.incrementTestCompletionCount();
         }
+        
+        return true;
+      } else {
+        throw new Error(data.description || 'Unknown error');
       }
-      
-      if (window.showNotification) {
-        showNotification(`❌ ${errorMsg}`, 'error');
-      }
-      alert(`Ошибка Telegram:\n${errorMsg}\n\nОткройте консоль (F12) для деталей`);
+    } catch (error) {
+      console.error('❌ Ошибка отправки в Telegram:', error);
       return false;
     }
-  } catch (error) {
-    console.error('❌ Критическая ошибка отправки в Telegram:', error);
-    if (window.showNotification) {
-      showNotification('❌ Ошибка отправки в Telegram', 'error');
+  }
+
+  // Проверка конфигурации
+  function checkConfiguration() {
+    if (TELEGRAM_BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE' || 
+        TELEGRAM_CHAT_ID === 'YOUR_CHAT_ID_HERE') {
+      console.warn('⚠️ ВНИМАНИЕ: Не настроены TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID');
+      console.warn('📖 Инструкция:');
+      console.warn('1. Создайте бота через @BotFather и получите токен');
+      console.warn('2. Узнайте свой chat_id через @userinfobot');
+      console.warn('3. Замените значения в results-sender.js');
+      return false;
     }
-    alert(`Ошибка:\n${error.message}\n\nОткройте консоль (F12) для деталей`);
-    return false;
-  }
-}
-
-// ========================================
-// ВАРИАНТ 5: Сохранение в Google Sheets через Apps Script
-// ========================================
-
-async function sendResultsViaGoogleSheets(result) {
-  try {
-    // URL вашего Google Apps Script Web App
-    const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
-    
-    const data = {
-      timestamp: new Date().toISOString(),
-      philosophy: result.philosophy,
-      subtype: result.subtype,
-      meaningIndex: result.meaningIndex,
-      description: result.description,
-      ...result.demographics
-    };
-    
-    const response = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    });
-    
-    console.log('✅ Результаты отправлены в Google Sheets');
     return true;
-  } catch (error) {
-    console.error('❌ Ошибка отправки в Google Sheets:', error);
-    return false;
   }
-}
 
-// ========================================
-// ГЛАВНАЯ ФУНКЦИЯ - вызывается после расчета результата
-// ========================================
+  // Экспорт функции
+  window.sendTestResults = async function(result) {
+    if (!checkConfiguration()) {
+      console.warn('⚠️ Telegram не настроен, результаты не отправлены');
+      return false;
+    }
 
-async function sendResults(result) {
-  console.log('📤 Отправка результатов...');
-  console.log('Результат:', result);
+    console.log('📤 Отправка результатов в Telegram...');
+    const success = await sendToTelegram(result);
+    
+    if (success) {
+      // Показываем уведомление
+      if (window.philosophyTestStorage?.showNotification) {
+        window.philosophyTestStorage.showNotification(
+          '✅ Результаты отправлены!', 
+          'success'
+        );
+      }
+    } else {
+      if (window.philosophyTestStorage?.showNotification) {
+        window.philosophyTestStorage.showNotification(
+          '❌ Ошибка отправки', 
+          'error'
+        );
+      }
+    }
+    
+    return success;
+  };
+
+  console.log('📨 Модуль отправки результатов инициализирован');
   
-  // ВКЛЮЧИТЕ НУЖНЫЙ МЕТОД ОТПРАВКИ:
-  
-  // Метод 1: Netlify Forms (если используете Netlify)
-  // await sendResultsViaNetlifyForm(result);
-  
-  // Метод 2: Google Forms
-  // await sendResultsViaGoogleForms(result);
-  
-  // Метод 3: Email через EmailJS
-  // await sendResultsViaEmail(result);
-  
-  // Метод 4: Telegram Bot (АКТИВИРОВАН ПО УМОЛЧАНИЮ)
-  await sendResultsViaTeleg(result);
-  
-  // Метод 5: Google Sheets
-  // await sendResultsViaGoogleSheets(result);
-}
+  // Проверяем конфигурацию при загрузке
+  if (checkConfiguration()) {
+    console.log('✅ Telegram настроен корректно');
+  }
 
-// Экспортируем функцию
-window.sendTestResults = sendResults;
-
-console.log('📬 Модуль отправки результатов инициализирован');
-
-// ========================================
-// ИНСТРУКЦИИ ПО НАСТРОЙКЕ
-// ========================================
-
-/*
-
-📋 ВАРИАНТ 1: NETLIFY FORMS (РЕКОМЕНДУЕТСЯ)
-===========================================
-1. Добавьте в index.html перед закрывающим </body>:
-
-<form name="test-results" netlify netlify-honeypot="bot-field" hidden>
-  <input type="text" name="philosophy" />
-  <input type="text" name="subtype" />
-  <input type="text" name="meaningIndex" />
-  <input type="text" name="description" />
-  <input type="text" name="age" />
-  <input type="text" name="gender" />
-  <input type="text" name="education" />
-  <input type="text" name="timestamp" />
-</form>
-
-2. Задеплойте на Netlify
-3. В панели Netlify: Forms → Notifications → добавьте свой email
-4. Готово! Все результаты будут приходить на email
-
-===========================================
-
-📋 ВАРИАНТ 2: GOOGLE FORMS
-===========================================
-1. Создайте Google Form: https://forms.google.com
-2. Добавьте поля: "Философия", "Подтип", "Индекс", "Возраст", "Пол"
-3. Откройте форму → Получить предзаполненную ссылку
-4. Заполните форму тестовыми данными → Получить ссылку
-5. Скопируйте URL и ID полей (entry.XXXXXX)
-6. Вставьте в GOOGLE_FORM_URL и FIELD_IDS
-7. Результаты автоматически попадут в Google Sheets
-
-===========================================
-
-📋 ВАРИАНТ 3: EMAILJS
-===========================================
-1. Зарегистрируйтесь: https://www.emailjs.com/
-2. Создайте Email Service (Gmail/Outlook/etc)
-3. Создайте Email Template с переменными:
-   {{philosophy}}, {{subtype}}, {{meaningIndex}}
-4. Получите Service ID, Template ID, Public Key
-5. Добавьте в index.html:
-   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-6. Вставьте ID в код выше
-
-===========================================
-
-📋 ВАРИАНТ 4: TELEGRAM BOT
-===========================================
-1. Найдите @BotFather в Telegram
-2. Отправьте /newbot и следуйте инструкциям
-3. Получите Bot Token
-4. Найдите @userinfobot и получите свой Chat ID
-5. Вставьте BOT_TOKEN и CHAT_ID в код
-6. Результаты будут приходить моментально в Telegram!
-
-===========================================
-
-📋 ВАРИАНТ 5: GOOGLE SHEETS
-===========================================
-1. Создайте Google Sheets
-2. Tools → Script Editor
-3. Вставьте код:
-
-function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSheet();
-  const data = JSON.parse(e.postData.contents);
-  sheet.appendRow([
-    data.timestamp,
-    data.philosophy,
-    data.subtype,
-    data.meaningIndex,
-    data.age,
-    data.gender
-  ]);
-  return ContentService.createTextOutput('OK');
-}
-
-4. Deploy → New deployment → Web app → Anyone
-5. Скопируйте URL и вставьте в SCRIPT_URL
-
-===========================================
-
-🎯 РЕКОМЕНДАЦИЯ:
-Используйте Netlify Forms (вариант 1) - самый простой!
-Или Telegram Bot (вариант 4) - мгновенные уведомления!
-
-*/
+})();
