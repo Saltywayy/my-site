@@ -24,16 +24,16 @@
 }
 
 [data-theme="beige"] {
-  --bg: #e8e3d6;
-  --card: #f0ebe0;
+  --bg: #ddd6c8;
+  --card: #ebe6da;
   --text: #3a3229;
-  --muted: #756b5e;
-  --accent: #a68a64;
-  --accent-2: #8b7355;
-  --success: #9b8b6f;
-  --glass: rgba(240,235,224,0.7);
-  --shadow: 0 6px 20px rgba(58,50,41,0.15);
-  --border: rgba(117,107,94,0.2);
+  --muted: #6e6558;
+  --accent: #9a8168;
+  --accent-2: #7d6b54;
+  --success: #8b7d65;
+  --glass: rgba(235,230,218,0.7);
+  --shadow: 0 6px 20px rgba(58,50,41,0.18);
+  --border: rgba(110,101,88,0.25);
 }
 
 html,body{
@@ -358,27 +358,33 @@ form{display:block;}
   border-radius: 10px;
   margin-bottom: 16px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 .resume-banner .message {
   flex: 1;
   font-weight: 600;
+  text-align: center;
 }
 .resume-banner .actions {
   display: flex;
   gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 .resume-banner .btn {
   background: white;
   color: var(--accent);
-  padding: 8px 16px;
+  padding: 10px 16px;
   border: none;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s;
+  flex: 1;
+  min-width: 120px;
+  white-space: nowrap;
 }
 .resume-banner .btn:hover {
   transform: translateY(-2px);
@@ -438,4 +444,28 @@ form{display:block;}
   .question-card, .demo-card {
     background: var(--card);
   }
-}
+  
+  /* НОВОЕ: Исправление баннера восстановления на мобильных */
+  .resume-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 14px;
+  }
+  
+  .resume-banner .message {
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  .resume-banner .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .resume-banner .btn {
+    width: 100%;
+    min-width: unset;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  }
