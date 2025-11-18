@@ -7,6 +7,30 @@
   const TELEGRAM_BOT_TOKEN = '8144304163:AAFUmGtCKg95KOliytaaS8f6TOijQFvYXsU';
   const TELEGRAM_CHAT_ID = '657863328';
 
+  // Экранирование специальных символов для Markdown
+  function escapeMarkdown(text) {
+    if (!text) return 'N/A';
+    return String(text)
+      .replace(/\_/g, '\\_')
+      .replace(/\*/g, '\\*')
+      .replace(/\[/g, '\\[')
+      .replace(/\]/g, '\\]')
+      .replace(/\(/g, '\\(')
+      .replace(/\)/g, '\\)')
+      .replace(/\~/g, '\\~')
+      .replace(/\`/g, '\\`')
+      .replace(/\>/g, '\\>')
+      .replace(/\#/g, '\\#')
+      .replace(/\+/g, '\\+')
+      .replace(/\-/g, '\\-')
+      .replace(/\=/g, '\\=')
+      .replace(/\|/g, '\\|')
+      .replace(/\{/g, '\\{')
+      .replace(/\}/g, '\\}')
+      .replace(/\./g, '\\.')
+      .replace(/\!/g, '\\!');
+  }
+
   // Форматирование результатов для отправки в Telegram
   function formatResultsForTelegram(result) {
     // Получаем данные из session-tracker
@@ -15,39 +39,40 @@
     let message = '📊 *НОВЫЙ РЕЗУЛЬТАТ ТЕСТА*\n\n';
     
     // Device ID и статистика
-    message += `🆔 *Device ID:* \`${sessionData.deviceId || 'N/A'}\`\n`;
-    message += `🔄 *Прохождений с устройства:* ${sessionData.completionCount || 0}\n`;
-    message += `⏱️ *Время на сайте:* ${sessionData.sessionTimeFormatted || 'N/A'}\n`;
-    message += `📅 *Дата:* ${new Date().toLocaleString('ru-RU')}\n\n`;
+    message += `🆔 *Device ID:* ${escapeMarkdown(sessionData.deviceId)}\n`;
+    message += `🔄 *Прохождений:* ${sessionData.completionCount || 0}\n`;
+    message += `⏱️ *Время на сайте:* ${escapeMarkdown(sessionData.sessionTimeFormatted)}\n`;
+    message += `📅 *Дата:* ${escapeMarkdown(new Date().toLocaleString('ru-RU'))}\n\n`;
     
     // Результаты теста
-    message += `🧠 *Философия:* ${result.philosophy}\n`;
-    message += `🎭 *Подтип:* ${result.subtype}\n`;
-    message += `📈 *Индекс смысла:* ${result.meaningIndex}/100\n\n`;
+    message += `🧠 *Философия:* ${escapeMarkdown(result.philosophy)}\n`;
+    message += `🎭 *Подтип:* ${escapeMarkdown(result.subtype)}\n`;
+    message += `📈 *Индекс:* ${result.meaningIndex}/100\n\n`;
     
     // Демография
     if (result.demographics && Object.keys(result.demographics).length > 0) {
       message += '👤 *ДЕМОГРАФИЯ:*\n';
       for (let [key, value] of Object.entries(result.demographics)) {
-        message += `• ${key}: ${value}\n`;
+        message += `• ${escapeMarkdown(key)}: ${escapeMarkdown(value)}\n`;
       }
       message += '\n';
     }
     
     // Техническая информация
     message += `🖥️ *ТЕХНИЧЕСКАЯ ИНФОРМАЦИЯ:*\n`;
-    message += `• Браузер: ${(sessionData.userAgent || 'N/A').substring(0, 50)}...\n`;
-    message += `• Язык: ${sessionData.language || 'N/A'}\n`;
-    message += `• Разрешение: ${sessionData.screenResolution || 'N/A'}\n`;
-    message += `• Часовой пояс: ${sessionData.timezone || 'N/A'}\n`;
-    message += `• Начало сессии: ${sessionData.startTime || 'N/A'}\n`;
+    const ua = (sessionData.userAgent || 'N/A').substring(0, 50);
+    message += `• Браузер: ${escapeMarkdown(ua)}\\.\\.\\.\n`;
+    message += `• Язык: ${escapeMarkdown(sessionData.language)}\n`;
+    message += `• Разрешение: ${escapeMarkdown(sessionData.screenResolution)}\n`;
+    message += `• Часовой пояс: ${escapeMarkdown(sessionData.timezone)}\n`;
+    message += `• Начало: ${escapeMarkdown(sessionData.startTime)}\n`;
     
     // Статус устройства
     const completionCount = sessionData.completionCount || 0;
     if (completionCount === 1) {
       message += `\n✅ *Первое прохождение с этого устройства*`;
     } else {
-      message += `\n⚠️ *Повторное прохождение (#${completionCount})*`;
+      message += `\n⚠️ *Повторное прохождение \\(\\#${completionCount}\\)*`;
     }
     
     return message;
