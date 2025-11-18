@@ -164,28 +164,29 @@ window.addEventListener('beforeunload', () => {
   saveAnswers();
 });
 
-// ОБНОВЛЕНО: Валидация формы (вариант "Нет подходящего варианта" считается за ответ)
+// ОБНОВЛЕНО: Валидация формы (проверяем демографию И вопросы)
 function validateForm() {
   const form = document.getElementById('quizForm');
-  if (!form) return { isValid: false, errors: [], unfilledQuestions: [] };
+  if (!form) return { isValid: false, errors: [], unfilledQuestions: [], unfilledDemo: [] };
   
   const formData = new FormData(form);
   const errors = [];
   const unfilledQuestions = [];
+  const unfilledDemo = [];
   
-  // Проверяем демографические поля
+  // ВАЖНО: Проверяем демографические поля
   const demoFields = ['population', 'education', 'field', 'religion_ident', 'gender', 'age'];
   demoFields.forEach(field => {
     if (!formData.get(field)) {
+      unfilledDemo.push(field);
       errors.push(`Не заполнено поле: ${getDemographicLabel(field)}`);
     }
   });
   
-  // ИЗМЕНЕНО: Проверяем вопросы - любой выбор (включая "Нет подходящего варианта") считается ответом
+  // Проверяем вопросы - любой выбор (включая "Нет подходящего варианта") считается ответом
   if (typeof questionsData !== 'undefined') {
     for (let i = 1; i <= questionsData.length; i++) {
       const questionName = `q${i}`;
-      // Проверяем, выбрана ли хотя бы одна радиокнопка для этого вопроса
       const hasAnswer = form.querySelector(`input[name="${questionName}"]:checked`);
       
       if (!hasAnswer) {
@@ -193,7 +194,6 @@ function validateForm() {
       }
     }
     
-    // ВАЖНО: Даже если выбран вариант с пустыми тегами (tags: []), это считается ответом
     if (unfilledQuestions.length > 0) {
       errors.push(`Не отвечено на ${unfilledQuestions.length} вопрос(ов): ${unfilledQuestions.slice(0, 5).join(', ')}${unfilledQuestions.length > 5 ? '...' : ''}`);
     }
@@ -202,7 +202,8 @@ function validateForm() {
   return {
     isValid: errors.length === 0,
     errors,
-    unfilledQuestions
+    unfilledQuestions,
+    unfilledDemo
   };
 }
 
@@ -287,15 +288,21 @@ function showNotification(message, type = 'info') {
 function enhancedCalculate(originalCalculateFunc) {
   const validation = validateForm();
   
-  // ИЗМЕНЕНО: Если есть реально незаполненные вопросы (ни один вариант не выбран)
-  if (!validation.isValid && validation.unfilledQuestions.length > 0) {
+  // Проверяем: есть ли незаполненные демографические поля?
+  if (validation.unfilledDemo && validation.unfilledDemo.length > 0) {
+    showNotification('⚠️ Заполните все демографические поля', 'warning');
+    return false;
+  }
+  
+  // Проверяем: есть ли реально незаполненные вопросы (ни один вариант не выбран)
+  if (validation.unfilledQuestions && validation.unfilledQuestions.length > 0) {
     showNotification('⚠️ Пожалуйста, ответьте на все вопросы', 'warning');
     
     setTimeout(() => {
       const errorList = validation.errors.slice(0, 3).join('\n');
       showConfirmModal(
-        'Есть незаполненные поля',
-        `${errorList}\n\nВы можете продолжить без заполнения всех полей, но результаты будут менее точными.`,
+        'Есть незаполненные вопросы',
+        `Не отвечено на ${validation.unfilledQuestions.length} вопрос(ов).\n\nВы можете продолжить без заполнения всех полей, но результаты будут менее точными.`,
         () => {
           originalCalculateFunc();
           clearSavedData();
@@ -308,29 +315,45 @@ function enhancedCalculate(originalCalculateFunc) {
     return false;
   }
   
-  // Если все вопросы отвечены (включая "Нет подходящего варианта"), сразу считаем
+  // ✅ Все поля заполнены (демография + все вопросы) - считаем и отправляем
   originalCalculateFunc();
   clearSavedData();
   return true;
 }
 
-// Улучшенная функция сброса с подтверждением
-function enhancedReset(originalResetFunc) {
+// ОБНОВЛЕНО: Улучшенная функция сброса с полной очисткой
+function enhancedReset(resetCallback) {
   showConfirmModal(
     'Сбросить все ответы?',
     'Все ваши ответы будут удалены. Это действие нельзя отменить.',
     () => {
-      if (originalResetFunc) originalResetFunc();
+      // Полная очистка формы
+      const form = document.getElementById('quizForm');
+      if (form) {
+        form.reset();
+      }
       
+      // Очищаем сохраненные данные
       clearSavedData();
       
       // Очищаем визуальные выделения
       document.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
       document.querySelectorAll('.demo-card .opt-card').forEach(c => c.classList.remove('selected'));
       
+      // ВАЖНО: Очищаем блок результатов
+      const resultEl = document.getElementById('result');
+      if (resultEl) {
+        resultEl.innerHTML = '';
+      }
+      
       // Сбрасываем возраст
       const ageInput = document.querySelector('input[name="age"]');
       if (ageInput) ageInput.value = '';
+      
+      // Вызываем callback если есть (для дополнительной очистки)
+      if (resetCallback && typeof resetCallback === 'function') {
+        resetCallback();
+      }
       
       // Возвращаемся к первому вопросу
       if (typeof showQuestion === 'function') {
@@ -341,7 +364,7 @@ function enhancedReset(originalResetFunc) {
         updateProgress();
       }
       
-      showNotification('🔄 Тест сброшен', 'success');
+      showNotification('🔄 Тест полностью сброшен', 'success');
       
       if (window.philosophyTestAnalytics) {
         window.philosophyTestAnalytics.trackReset();
