@@ -598,8 +598,7 @@ function showDataConsentModal(result) {
     if (window.sendTestResults) {
       window.sendTestResults(result);
     }
-    if (window.showNotification) {
-     showNotification('✅ Спасибо! Данные отправлены анонимно', 'success');
+    if (window.showNotification) {showNotification('✅ Спасибо! Данные отправлены анонимно', 'success');
     }
   };
   
@@ -670,3 +669,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log('✅ Философский тест полностью загружен');
 });
+     
