@@ -131,6 +131,40 @@ header.fixed-header{
 .header-inner{max-width:1000px;width:100%;display:flex;align-items:center;gap:12px;padding:10px 16px;box-sizing:border-box;}
 .title{font-weight:700;font-size:18px;flex:1;text-align:left;background:linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
+/* Переключатель языка */
+.lang-toggle-wrapper {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.lang-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+  position: relative;
+  opacity: 0.5;
+}
+
+.lang-btn:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.lang-btn.active {
+  opacity: 1;
+  background: var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transform: scale(1);
+}
+
 /* Переключатель тем */
 .theme-toggle-wrapper {
   display: flex;
@@ -428,7 +462,11 @@ form{display:block;}
   
   .header-inner{padding:8px;flex-wrap:wrap;}
   .progress-wrap{display:none;}
-  .theme-toggle-wrapper{order:3;width:100%;}
+  
+  /* НОВОЕ: Языковой переключатель на мобильных */
+  .lang-toggle-wrapper{order:2;margin-left:auto;}
+  .theme-toggle-wrapper{order:3;width:100%;margin-top:8px;}
+  
   .options{grid-template-columns:1fr;}
   .wrap{margin:100px 12px 30px;}
   .nav-row{flex-direction:column;}
@@ -468,4 +506,4 @@ form{display:block;}
     padding: 12px 16px;
     font-size: 14px;
   }
-  }
+}
