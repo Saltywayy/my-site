@@ -1,14 +1,15 @@
-// results-sender.js - Отправка результатов в Telegram с временем и Device ID
+// results-sender.js - Отправка результатов в Telegram с Device ID и временем сессии
 
 (function() {
   'use strict';
 
   // ⚠️ ВАЖНО: Замените на ваши данные
-  const TELEGRAM_BOT_TOKEN = '8144304163:AAFUmGtCKg95KOliytaaS8f6TOijQFvYXsU'; // Получите у @BotFather
-  const TELEGRAM_CHAT_ID = '657863328'; // Ваш chat_id
+  const TELEGRAM_BOT_TOKEN = '8144304163:AAFUmGtCKg95KOliytaaS8f6TOijQFvYXsU';
+  const TELEGRAM_CHAT_ID = '657863328';
 
   // Форматирование результатов для отправки в Telegram
   function formatResultsForTelegram(result) {
+    // Получаем данные из session-tracker
     const sessionData = window.philosophyTestSession?.getSessionData() || {};
     
     let message = '📊 *НОВЫЙ РЕЗУЛЬТАТ ТЕСТА*\n\n';
@@ -25,14 +26,17 @@
     message += `📈 *Индекс смысла:* ${result.meaningIndex}/100\n\n`;
     
     // Демография
-    message += '👤 *ДЕМОГРАФИЯ:*\n';
-    for (let [key, value] of Object.entries(result.demographics || {})) {
-      message += `• ${key}: ${value}\n`;
+    if (result.demographics && Object.keys(result.demographics).length > 0) {
+      message += '👤 *ДЕМОГРАФИЯ:*\n';
+      for (let [key, value] of Object.entries(result.demographics)) {
+        message += `• ${key}: ${value}\n`;
+      }
+      message += '\n';
     }
     
     // Техническая информация
-    message += `\n🖥️ *ТЕХНИЧЕСКАЯ ИНФОРМАЦИЯ:*\n`;
-    message += `• Браузер: ${sessionData.userAgent?.substring(0, 50) || 'N/A'}...\n`;
+    message += `🖥️ *ТЕХНИЧЕСКАЯ ИНФОРМАЦИЯ:*\n`;
+    message += `• Браузер: ${(sessionData.userAgent || 'N/A').substring(0, 50)}...\n`;
     message += `• Язык: ${sessionData.language || 'N/A'}\n`;
     message += `• Разрешение: ${sessionData.screenResolution || 'N/A'}\n`;
     message += `• Часовой пояс: ${sessionData.timezone || 'N/A'}\n`;
@@ -52,9 +56,13 @@
   // Отправка в Telegram
   async function sendToTelegram(result) {
     try {
+      console.log('📤 Начинаю отправку в Telegram...');
+      
       const message = formatResultsForTelegram(result);
+      console.log('📝 Сформированное сообщение:', message.substring(0, 200) + '...');
       
       const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -67,26 +75,43 @@
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`Telegram API error: ${response.status}`);
+      const data = await response.json();
+      console.log('📨 Ответ от Telegram API:', data);
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.description || `HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      console.log('✅ Результаты успешно отправлены в Telegram');
       
-      if (data.ok) {
-        console.log('✅ Результаты успешно отправлены в Telegram');
-        
-        // Увеличиваем счетчик прохождений
-        if (window.philosophyTestSession) {
-          window.philosophyTestSession.incrementTestCompletionCount();
-        }
-        
-        return true;
-      } else {
-        throw new Error(data.description || 'Unknown error');
+      // Увеличиваем счетчик прохождений
+      if (window.philosophyTestSession) {
+        window.philosophyTestSession.incrementTestCompletionCount();
       }
+      
+      return true;
+      
     } catch (error) {
       console.error('❌ Ошибка отправки в Telegram:', error);
+      
+      // Показываем понятное сообщение об ошибке
+      let errorMsg = 'Ошибка отправки в Telegram';
+      if (error.message) {
+        if (error.message.includes('bot was blocked')) {
+          errorMsg = 'Бот заблокирован. Напишите боту /start в Telegram';
+        } else if (error.message.includes('chat not found')) {
+          errorMsg = 'Неверный Chat ID. Проверьте ID в коде';
+        } else if (error.message.includes('Unauthorized')) {
+          errorMsg = 'Неверный Bot Token. Проверьте токен в коде';
+        } else {
+          errorMsg = error.message;
+        }
+      }
+      
+      if (window.philosophyTestStorage?.showNotification) {
+        window.philosophyTestStorage.showNotification(`❌ ${errorMsg}`, 'error');
+      }
+      
       return false;
     }
   }
@@ -113,10 +138,11 @@
     }
 
     console.log('📤 Отправка результатов в Telegram...');
+    console.log('📊 Данные для отправки:', result);
+    
     const success = await sendToTelegram(result);
     
     if (success) {
-      // Показываем уведомление
       if (window.philosophyTestStorage?.showNotification) {
         window.philosophyTestStorage.showNotification(
           '✅ Результаты отправлены!', 
