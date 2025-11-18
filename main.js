@@ -1,4 +1,4 @@
-// main.js - Основная логика теста
+// main.js - Основная логика теста с поддержкой i18n
 
 // Вспомогательные функции
 function random(arr) { 
@@ -11,16 +11,64 @@ function escapeHtml(str) {
   }); 
 }
 
+// Получение функции перевода
+const t = () => window.philosophyTestI18n?.t || ((key) => key);
+
 // Глобальные переменные
 const questionsArea = document.getElementById('questionsArea');
 const demographicsArea = document.getElementById('demographicsArea');
-const totalQ = questionsData.length;
+let totalQ = 40;
 let currentIndex = 0;
 let firstAnswerGiven = false;
 
+// Функция перестроения всего интерфейса при смене языка
+function rebuildInterface() {
+  const translate = t();
+  
+  // Обновляем title
+  document.getElementById('siteTitle').textContent = translate('siteTitle');
+  
+  // Обновляем дисклеймер
+  document.getElementById('disclaimerTitle').textContent = translate('disclaimer.title');
+  document.getElementById('disclaimerText').textContent = translate('disclaimer.text');
+  
+  // Обновляем кнопки
+  document.getElementById('openSummary').textContent = translate('buttons.viewAnswers');
+  document.getElementById('prevBtn').textContent = translate('buttons.prev');
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = currentIndex === totalQ - 1 ? translate('buttons.last') : translate('buttons.next');
+  document.getElementById('showAllBtn').textContent = translate('buttons.showAll');
+  document.getElementById('calcBtn').textContent = translate('buttons.calculate');
+  document.getElementById('resetBtn').textContent = translate('buttons.reset');
+  document.getElementById('closeModal').textContent = translate('buttons.close');
+  document.getElementById('modalTitle').textContent = translate('modals.allAnswers');
+  
+  // Обновляем данные
+  if (typeof updateDataForLanguage === 'function') {
+    updateDataForLanguage();
+  }
+  
+  // Полностью перестраиваем демографию и вопросы
+  totalQ = window.questionsData?.length || 40;
+  buildDemographics();
+  buildQuestions();
+  observeAll();
+  updateProgress();
+  showQuestion(currentIndex);
+  
+  console.log(`✅ Интерфейс обновлён для языка: ${window.philosophyTestI18n?.getCurrentLanguage()}`);
+}
+
+// Глобально экспортируем функцию
+window.rebuildInterface = rebuildInterface;
+
 // Построение демографических карточек
 function buildDemographics() {
+  const translate = t();
   demographicsArea.innerHTML = '';
+  
+  const demographics = getDemographics();
+  
   demographics.forEach(d => {
     const div = document.createElement('div');
     div.className = 'demo-card reveal';
@@ -37,7 +85,7 @@ function buildDemographics() {
       inp.name = d.name; 
       inp.min = 10; 
       inp.max = 120; 
-      inp.placeholder = 'Введите возраст';
+      inp.placeholder = translate('demographics.agePlaceholder');
       inp.style.padding = '8px'; 
       inp.style.borderRadius = '8px'; 
       inp.style.border = '1px solid rgba(0,0,0,0.06)';
@@ -96,7 +144,7 @@ function buildDemographics() {
         const customInput = document.createElement('input');
         customInput.type = 'text';
         customInput.id = `custom-input-${d.name}`;
-        customInput.placeholder = 'Введите вашу религию';
+        customInput.placeholder = translate('demographics.religionPlaceholder');
         customInput.style.padding = '10px';
         customInput.style.borderRadius = '8px';
         customInput.style.border = '2px solid var(--accent)';
@@ -115,6 +163,7 @@ function buildDemographics() {
 }
 
 function showCustomInputForReligion(labelElement, radioInput, fieldName) {
+  const translate = t();
   const customWrap = document.getElementById(`custom-${fieldName}`);
   const customInput = document.getElementById(`custom-input-${fieldName}`);
   
@@ -124,9 +173,9 @@ function showCustomInputForReligion(labelElement, radioInput, fieldName) {
     
     customInput.addEventListener('input', function() {
       if (this.value.trim()) {
-        radioInput.value = `Верующий: ${this.value}`;
+        radioInput.value = `${translate('demographics.religionPrefix')} ${this.value}`;
       } else {
-        radioInput.value = 'Верующий (укажите религию)';
+        radioInput.value = translate('demographics.religionOpts')[0];
       }
     });
   }
@@ -143,8 +192,11 @@ function hideCustomInputForReligion(fieldName) {
 }
 
 function buildQuestions() {
+  const translate = t();
   questionsArea.innerHTML = '';
-  questionsData.forEach((item, idx) => {
+  const questions = window.questionsData || [];
+  
+  questions.forEach((item, idx) => {
     const qDiv = document.createElement('div');
     qDiv.className = 'question-card reveal';
     qDiv.dataset.index = idx;
@@ -234,6 +286,7 @@ const progressBar = document.getElementById('globalProgressBar');
 const progressText = document.getElementById('progressText');
 
 function showQuestion(idx) {
+  const translate = t();
   if (idx < 0) idx = 0;
   if (idx >= totalQ) idx = totalQ - 1;
   
@@ -244,9 +297,9 @@ function showQuestion(idx) {
   if (cur) cur.classList.remove('hidden');
   
   currentIndex = idx;
-  qCounter.textContent = `Вопрос ${idx+1} / ${totalQ}`;
+  qCounter.textContent = `${translate('progress.question')} ${idx+1} ${translate('progress.of')} ${totalQ}`;
   prevBtn.disabled = idx === 0;
-  nextBtn.textContent = idx === totalQ - 1 ? 'Последний' : 'Далее';
+  nextBtn.textContent = idx === totalQ - 1 ? translate('buttons.last') : translate('buttons.next');
   
   if (cur) io.observe(cur);
   updateProgress();
@@ -263,7 +316,6 @@ function updateProgress() {
   const fd = new FormData(document.getElementById('quizForm'));
   let answered = 0;
   for (let [k, v] of fd.entries()) {
-    // Считаем ответом даже пустое значение (вариант "Нет подходящего варианта")
     if (k.startsWith('q')) answered++;
   }
   const percent = Math.round((answered / totalQ) * 100);
@@ -282,30 +334,35 @@ modalBackdrop.addEventListener('click', (e) => {
 });
 
 function openSummary() {
+  const translate = t();
   const fd = new FormData(document.getElementById('quizForm'));
-  let rows = '<table class="summary-table"><thead><tr><th>#</th><th>Вопрос</th><th>Ответ</th></tr></thead><tbody>';
+  let rows = `<table class="summary-table"><thead><tr><th>${translate('table.number')}</th><th>${translate('table.question')}</th><th>${translate('table.answer')}</th></tr></thead><tbody>`;
 
+  const demographics = getDemographics();
   const demoOrder = ['population', 'education', 'field', 'religion_ident', 'gender', 'age'];
   let rnum = 0;
+  
   demoOrder.forEach(name => {
     rnum++;
     const val = fd.get(name);
-    const label = demographics.find(d => d.name === name)?.label || name;
-    const text = val ? escapeHtml(val) : 'Не отвечено.';
-    rows += `<tr><td>Д${rnum}</td><td>${escapeHtml(label)}</td><td>${text}</td></tr>`;
+    const demoItem = demographics.find(d => d.name === name);
+    const label = demoItem?.label || name;
+    const text = val ? escapeHtml(val) : translate('results.notAnswered');
+    rows += `<tr><td>D${rnum}</td><td>${escapeHtml(label)}</td><td>${text}</td></tr>`;
   });
 
+  const questions = window.questionsData || [];
   for (let i = 0; i < totalQ; i++) {
     const qName = `q${i+1}`;
     const val = fd.get(qName);
     let text = '';
     if (val) {
       const inp = document.querySelector(`input[name="${qName}"][value="${val}"]`);
-      text = inp ? escapeHtml(inp.dataset.optText) : 'Выбран вариант';
+      text = inp ? escapeHtml(inp.dataset.optText) : translate('table.selected');
     } else {
-      text = 'Не отвечено.';
+      text = translate('results.notAnswered');
     }
-    rows += `<tr><td>${i+1}</td><td>${escapeHtml(questionsData[i].q)}</td><td>${text}</td></tr>`;
+    rows += `<tr><td>${i+1}</td><td>${escapeHtml(questions[i]?.q || '')}</td><td>${text}</td></tr>`;
   }
   
   rows += '</tbody></table>';
@@ -351,8 +408,13 @@ function initThemeToggle() {
 }
 
 function calculate() {
+  const translate = t();
   const fd = new FormData(document.getElementById('quizForm'));
   const counts = {};
+  const philosophyNames = getPhilosophyNames();
+  const subtypes = getSubtypes();
+  const longDesc = getLongDesc();
+  
   Object.keys(philosophyNames).forEach(t => counts[t] = 0);
   let answered = 0;
 
@@ -369,7 +431,7 @@ function calculate() {
   }
 
   if (!answered) {
-    document.getElementById('result').textContent = 'Ответьте хотя бы на один вопрос с тегами.';
+    document.getElementById('result').textContent = translate('notifications.answerAtLeastOne');
     return;
   }
 
@@ -384,7 +446,7 @@ function calculate() {
     let s2 = 100 - s1;
     main = `${escapeHtml(philosophyNames[top[0]])} — ${escapeHtml(philosophyNames[sec[0]])} (${s1}/${s2})`;
     sub = `${escapeHtml(random(subtypes[top[0]]))} / ${escapeHtml(random(subtypes[sec[0]]))}`;
-    desc = `Смешанный профиль: ${s1}% / ${s2}%.`;
+    desc = `${translate('results.mixedProfile')} ${s1}% / ${s2}%.`;
   } else {
     main = escapeHtml(philosophyNames[top[0]]);
     sub = escapeHtml(random(subtypes[top[0]]));
@@ -402,17 +464,17 @@ function calculate() {
 
   const resultEl = document.getElementById('result');
   resultEl.innerHTML = `
-    <h3>Результат</h3>
-    <p><b>Основная философия:</b> ${main}</p>
-    <p><b>Подтип:</b> ${sub}</p>
+    <h3>${translate('results.title')}</h3>
+    <p><b>${translate('results.mainPhilosophy')}</b> ${main}</p>
+    <p><b>${translate('results.subtype')}</b> ${sub}</p>
     ${desc ? `<p>${escapeHtml(desc)}</p>` : ''}
-    <div class="longdesc"><h4>📖 Подробное описание мировоззрения</h4><div id="longdesc-content"></div></div>
+    <div class="longdesc"><h4>${translate('results.detailedDescription')}</h4><div id="longdesc-content"></div></div>
     <hr>
-    <p><b>Индекс смыслоориентации:</b> ${mi}/100</p>
+    <p><b>${translate('results.meaningIndex')}</b> ${mi}/100</p>
     <div style="background:#e9eef8;height:10px;border-radius:999px;overflow:hidden;margin:8px 0;">
       <div style="height:100%;width:${mi}%;background:var(--accent);transition:width .5s;"></div>
     </div>
-    <div id="demo-results" style="margin-top:12px;"><h4>📋 Демографические ответы</h4><div id="demo-content"></div></div>
+    <div id="demo-results" style="margin-top:12px;"><h4>${translate('results.demographicAnswers')}</h4><div id="demo-content"></div></div>
   `;
 
   const longDescContainer = document.getElementById('longdesc-content');
@@ -430,10 +492,11 @@ function calculate() {
     longDescContainer.appendChild(p);
   }
 
+  const demographics = getDemographics();
   const demoContent = document.getElementById('demo-content');
   demoContent.innerHTML = '';
   demographics.forEach(d => {
-    const val = fd.get(d.name) || 'Не отвечено.';
+    const val = fd.get(d.name) || translate('results.notAnswered');
     const el = document.createElement('p'); 
     el.innerHTML = `<b>${escapeHtml(d.label)}:</b> ${escapeHtml(val)}`;
     demoContent.appendChild(el);
@@ -454,25 +517,21 @@ function calculate() {
     if (val) result.demographics[d.label] = val;
   });
 
-  // Отслеживаем завершение
   if (window.philosophyTestAnalytics) {
     window.philosophyTestAnalytics.trackTestComplete(result);
   }
   
-  // Добавляем кнопки экспорта
   if (window.philosophyTestExport) {
     window.philosophyTestExport.addExportButtons(resultEl, result);
   }
   
-  // Отправляем результаты (показываем модальное окно согласия)
   if (typeof showDataConsentModal === 'function') {
     showDataConsentModal(result);
-  } else {
-    console.warn('⚠️ Функция showDataConsentModal не найдена');
   }
 }
 
 function showDataConsentModal(result) {
+  const translate = t();
   const existingModal = document.querySelector('.data-consent-modal');
   if (existingModal) existingModal.remove();
   
@@ -504,29 +563,28 @@ function showDataConsentModal(result) {
     z-index: 1000000;
   `;
   
+  const willSendItems = translate('consent.willSendItems').map(item => `<li>${item}</li>`).join('');
+  const wontSendItems = translate('consent.wontSendItems').map(item => `<li>${item}</li>`).join('');
+  
   content.innerHTML = `
-    <h3 style="margin: 0 0 15px 0; color: var(--text);">🔒 Согласие на обработку данных</h3>
+    <h3 style="margin: 0 0 15px 0; color: var(--text);">${translate('consent.title')}</h3>
     <p style="line-height: 1.6; margin: 15px 0; color: var(--text);">
-      Мы собираем анонимную статистику результатов теста для улучшения качества и проведения исследований.
+      ${translate('consent.intro')}
     </p>
     <div style="background: rgba(43, 123, 228, 0.1); padding: 12px; border-radius: 8px; margin: 15px 0;">
-      <p style="margin: 5px 0; font-size: 13px; color: var(--text);"><strong>Что будет отправлено:</strong></p>
+      <p style="margin: 5px 0; font-size: 13px; color: var(--text);"><strong>${translate('consent.willSend')}</strong></p>
       <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px; color: var(--text);">
-        <li>Результат теста (философия, подтип, индекс)</li>
-        <li>Демографические данные (возраст, пол, образование)</li>
-        <li>Дата и время прохождения</li>
+        ${willSendItems}
       </ul>
     </div>
     <div style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 8px; margin: 15px 0;">
-      <p style="margin: 5px 0; font-size: 13px; color: var(--text);"><strong>Что НЕ будет отправлено:</strong></p>
+      <p style="margin: 5px 0; font-size: 13px; color: var(--text);"><strong>${translate('consent.wontSend')}</strong></p>
       <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px; color: var(--text);">
-        <li>Ваше имя, email или контакты</li>
-        <li>IP-адрес или местоположение</li>
-        <li>Любые персональные данные</li>
+        ${wontSendItems}
       </ul>
     </div>
     <p style="font-size: 12px; color: var(--muted); margin: 15px 0;">
-      Все данные полностью анонимны и используются только для статистики.
+      ${translate('consent.footer')}
     </p>
   `;
   
@@ -541,7 +599,7 @@ function showDataConsentModal(result) {
   `;
   
   const declineBtn = document.createElement('button');
-  declineBtn.textContent = 'Не отправлять';
+  declineBtn.textContent = translate('buttons.decline');
   declineBtn.className = 'btn';
   declineBtn.style.cssText = `
     padding: 10px 20px;
@@ -558,7 +616,7 @@ function showDataConsentModal(result) {
   `;
   
   const acceptBtn = document.createElement('button');
-  acceptBtn.textContent = '✓ Согласен, отправить';
+  acceptBtn.textContent = translate('buttons.agree');
   acceptBtn.className = 'btn primary';
   acceptBtn.style.cssText = `
     padding: 10px 20px;
@@ -598,7 +656,8 @@ function showDataConsentModal(result) {
     if (window.sendTestResults) {
       window.sendTestResults(result);
     }
-    if (window.showNotification) {showNotification('✅ Спасибо! Данные отправлены анонимно', 'success');
+    if (window.showNotification) {
+      showNotification(translate('notifications.thanksSent'), 'success');
     }
   };
   
@@ -607,7 +666,7 @@ function showDataConsentModal(result) {
     e.stopPropagation();
     backdrop.remove();
     if (window.showNotification) {
-      showNotification('Результаты не отправлены', 'info');
+      showNotification(translate('notifications.notSent'), 'info');
     }
   };
   
@@ -615,7 +674,7 @@ function showDataConsentModal(result) {
     if (e.target === backdrop) {
       backdrop.remove();
       if (window.showNotification) {
-        showNotification('Результаты не отправлены', 'info');
+        showNotification(translate('notifications.notSent'), 'info');
       }
     }
   };
@@ -632,6 +691,11 @@ function showDataConsentModal(result) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Инициализация i18n
+  if (window.philosophyTestI18n) {
+    window.philosophyTestI18n.initLanguageToggle();
+  }
+  
   buildDemographics();
   buildQuestions();
   observeAll();
@@ -658,7 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.philosophyTestStorage) {
       window.philosophyTestStorage.enhancedReset();
     } else {
-      if (confirm('Вы уверены, что хотите сбросить все ответы?')) {
+      if (confirm(t()('modals.resetConfirm'))) {
         document.getElementById('quizForm').reset();
         document.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
         showQuestion(0);
@@ -667,6 +731,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  console.log('✅ Философский тест полностью загружен');
+  console.log('✅ Философский тест полностью загружен с поддержкой i18n');
 });
-     
