@@ -315,8 +315,6 @@ function updateDataForLanguage() {
 
 // Делаем функцию доступной глобально
 window.updateDataForLanguage = updateDataForLanguage;
-
-console.log('📊 Данные с поддержкой i18n загружены');
 // Глобальная инициализация данных
 window.questionsDataRu = questionsDataRu;
 window.questionsDataEn = questionsDataEn;
