@@ -725,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.philosophyTestStorage) {
       window.philosophyTestStorage.enhancedReset();
     } else {
-      if (confirm(t()('modals.resetConfirm'))) {
+      if (confirm(getTranslate()('modals.resetConfirm'))) {
         document.getElementById('quizForm').reset();
         document.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
         showQuestion(0);
