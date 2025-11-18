@@ -12,7 +12,10 @@ function escapeHtml(str) {
 }
 
 // Получение функции перевода
-const t = () => window.philosophyTestI18n?.t || ((key) => key);
+// Получение функции перевода
+function getTranslate() {
+  return window.philosophyTestI18n?.t || ((key) => key);
+}
 
 // Глобальные переменные
 const questionsArea = document.getElementById('questionsArea');
@@ -23,7 +26,7 @@ let firstAnswerGiven = false;
 
 // Функция перестроения всего интерфейса при смене языка
 function rebuildInterface() {
-  const translate = t();
+  const translate = getTranslate();
   
   // Обновляем title
   document.getElementById('siteTitle').textContent = translate('siteTitle');
@@ -163,7 +166,7 @@ function buildDemographics() {
 }
 
 function showCustomInputForReligion(labelElement, radioInput, fieldName) {
-  const translate = t();
+  const translate = getTranslate();
   const customWrap = document.getElementById(`custom-${fieldName}`);
   const customInput = document.getElementById(`custom-input-${fieldName}`);
   
@@ -192,7 +195,7 @@ function hideCustomInputForReligion(fieldName) {
 }
 
 function buildQuestions() {
-  const translate = t();
+  const translate = getTranslate();
   questionsArea.innerHTML = '';
   const questions = window.questionsData || [];
   
@@ -334,7 +337,7 @@ modalBackdrop.addEventListener('click', (e) => {
 });
 
 function openSummary() {
-  const translate = t();
+  const translate = getTranslate();
   const fd = new FormData(document.getElementById('quizForm'));
   let rows = `<table class="summary-table"><thead><tr><th>${translate('table.number')}</th><th>${translate('table.question')}</th><th>${translate('table.answer')}</th></tr></thead><tbody>`;
 
@@ -408,7 +411,7 @@ function initThemeToggle() {
 }
 
 function calculate() {
-  const translate = t();
+  const translate = getTranslate();
   const fd = new FormData(document.getElementById('quizForm'));
   const counts = {};
   const philosophyNames = getPhilosophyNames();
